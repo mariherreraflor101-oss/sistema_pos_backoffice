@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bodega El Pueblo - Control de Compras</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --bg-main: #0A0E17;          
+            --bg-card: #161B29;          
+            --bg-row-alt: #1D2436;       
+            --accent-orange: #FF6600;    
+            --accent-blue: #00D5FF;      
+            --text-primary: #FFFFFF;     
+            --text-secondary: #94A3B8;   
+            --green-success: #34D399;    
+            --red-danger: #F87171;       
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        body { background-color: var(--bg-main); color: var(--text-primary); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        .sidebar { background-color: var(--bg-card); min-height: 100vh; border-right: 1px solid var(--border-color); }
+        .sidebar-link { color: var(--text-secondary); text-decoration: none; padding: 12px 20px; display: block; border-radius: 8px; margin-bottom: 5px; font-weight: 500; transition: 0.3s; cursor: pointer;}
+        .sidebar-link.active, .sidebar-link:hover { background-color: rgba(255, 102, 0, 0.1); color: var(--accent-orange); border-left: 3px solid var(--accent-orange); }
+        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); margin-bottom: 20px; }
+        
+        .text-muted { color: var(--text-secondary) !important; }
+        .text-brand-blue { color: var(--accent-blue) !important; }
+        .text-brand-orange { color: var(--accent-orange) !important; } 
+        .text-brand-green { color: var(--green-success) !important; } 
+        
+        .form-control, .form-select { background-color: var(--bg-main); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; transition: all 0.3s ease; color-scheme: dark; }
+        .form-control:focus, .form-select:focus { background-color: var(--bg-main); color: var(--text-primary); border-color: var(--accent-blue); box-shadow: 0 0 10px rgba(0, 213, 255, 0.2); }
+        .form-control::placeholder { color: #4A5568; }
+        .form-select option { background-color: var(--bg-card); color: var(--text-primary); }
+        .input-group-text { background-color: rgba(255,255,255,0.02); color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1); }
+        
+        .btn-brand-orange { background-color: var(--accent-orange); color: #000; border: none; border-radius: 10px; font-weight: bold; padding: 12px; transition: 0.3s; box-shadow: 0 4px 14px rgba(255, 102, 0, 0.3); }
+        .btn-brand-orange:hover { background-color: #ff7722; color: #000; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 102, 0, 0.5); }
+        .btn-brand-blue { background-color: rgba(0, 213, 255, 0.1); color: var(--accent-blue); border: 1px solid var(--accent-blue); border-radius: 10px; font-weight: bold; transition: 0.3s; }
+        .btn-brand-blue:hover { background-color: var(--accent-blue); color: #000; }
+
+        .panel-dinamico { background-color: var(--bg-main); border-radius: 15px; padding: 20px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); transition: 0.3s; }
+        .panel-paquete { border: 1px solid rgba(255, 102, 0, 0.3); }
+        .panel-volumen { border: 1px solid rgba(0, 213, 255, 0.3); }
+
+        #listaResultados { z-index: 1000; max-height: 250px; overflow-y: auto; border-radius: 10px; background-color: var(--bg-card); border: 1px solid var(--accent-blue); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .resultado-item { cursor: pointer; transition: 0.2s; background-color: var(--bg-card); color: var(--text-primary); border-bottom: 1px solid var(--border-color); }
+        .resultado-item:hover { background-color: var(--accent-blue); color: #000 !important; }
+        .resultado-item:hover span { color: #000 !important; }
+
+        .table { --bs-table-bg: transparent; color: var(--text-primary); margin-bottom: 0; }
+        .table-custom-header th { background-color: #070A10 !important; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; font-size: 12px; padding: 16px 20px; border-bottom: 2px solid var(--border-color); }
+        .table tbody tr { border-bottom: 1px solid var(--border-color); transition: background-color 0.2s ease; cursor: pointer; background-color: transparent !important; } 
+        .table tbody tr:hover td { background-color: var(--bg-row-alt) !important; }
+        .table td { padding: 16px 20px; vertical-align: middle; border-bottom: none; background-color: transparent !important; color: var(--text-primary) !important; }
+        .col-fecha { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+        .col-producto { font-weight: 600; color: var(--text-primary); }
+        .cant-base-badge { color: var(--text-primary); }
+        .cant-multiplicador { color: var(--text-secondary); font-size: 12px; margin-left: 4px; }
+        .badge-bonif { color: var(--green-success); font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+        .costo-text { color: var(--red-danger); font-weight: 700; font-variant-numeric: tabular-nums; }
+        .precio-regular { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+        .badge-precio-venta { background-color: rgba(255, 102, 0, 0.12); color: #ff8833; border: 1px solid rgba(255, 102, 0, 0.3); padding: 6px 12px; border-radius: 8px; font-weight: 700; display: inline-block; text-align: center; }
+
+        .form-switch .form-check-input { width: 3.5rem; height: 1.7rem; cursor: pointer; border: none; background-color: #4A5568; }
+        .switch-costo:checked { background-color: var(--accent-orange); } 
+        .switch-config:checked { background-color: var(--accent-orange); } 
+        .switch-config:not(:checked) { background-color: var(--accent-blue); } 
+        .switch-bono:checked { background-color: var(--green-success); } 
+        .switch-granel:checked { background-color: var(--accent-orange); } 
+        .switch-proyeccion:checked { background-color: var(--accent-blue) !important; }
+        .switch-proyeccion:not(:checked) { background-color: var(--accent-orange) !important; }
+
+        .toast { background-color: #151A2E; border-left: 5px solid; }
+
+        .fila-lote { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; transition: 0.2s; }
+        .fila-lote:hover { border-color: var(--accent-blue); }
+        
+        .fila-anulada { opacity: 0.4; }
+    </style>
+</head>
+<body>
+
+<div class="toast-container position-fixed top-0 end-0 p-4" style="z-index: 1055">
+    <div id="liveToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-bold" id="toastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const productosBase = JSON.parse('{{ productos_json|escapejs }}');
+    let loteCompras = [];
+    let costoUnitarioActual = 0;
+    let costoUnitarioModal = 0;
+    let trModalActual = null; 
+    let memPaqueteNombre = ''; 
+    let memPaqueteFactor = ''; 
+    let memPaqueteCodigo = '';
+    let memVolumenNombre = ''; 
+    let memVolumenMinimo = ''; 
+    let memVolumenPrecio = '';
+    
+    // NUEVO: Lista dinámica de Bonificaciones Externas
+    let bonosExternosLista = []; 
+
+    const parseSeguro = (val) => parseFloat((val || "0").toString().replace(',', '.')) || 0;
+</script>
+
+<div class="d-flex">
+    <div class="sidebar p-3" style="width: 250px;">
+        <h4 class="mb-4 text-center mt-2 fw-bold text-white"><i class="bi bi-cart-check text-brand-orange"></i> POS Admin</h4>
+        <a class="sidebar-link active" id="menuCostos" onclick="cambiarPestana('costos')">
+            <i class="bi bi-calculator-fill me-2"></i> Costos y Compras
+        </a>
+        <a class="sidebar-link" id="menuRegistro" onclick="cambiarPestana('registro')">
+            <i class="bi bi-receipt-cutoff me-2"></i> Registro Financiero
+        </a>
+    </div>
+
+    <div class="flex-grow-1 p-4">
+        
+        <div id="pestanaCostos">
+            <div class="mb-4 d-flex align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-0 text-white">Gestión de Compras y Precios Lote</h3>
+                    <p class="text-muted mb-0">Selecciona uno o más productos para distribuir compras agrupadas.</p>
+                </div>
+            </div>
+
+            <div class="card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-brand-blue mb-0 text-uppercase" style="font-size: 13px; letter-spacing: 0.5px;">
+                        <i class="bi bi-search me-2"></i>Añadir Producto al Lote
+                    </h5>
+                    <button type="button" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
+                        <i class="bi bi-plus-circle-fill me-2"></i>Agregar Nuevo
+                    </button>
+                </div>
+                
+                <div class="position-relative">
+                    <input type="text" id="buscadorInput" class="form-control form-control-lg text-white" placeholder="Ej: Shampoo..." autocomplete="off">
+                    <ul id="listaResultados" class="list-group position-absolute w-100" style="display: none;"></ul>
+                </div>
+            </div>
+
+            <div id="areaGestion" style="display: none;">
+                
+                <div class="card p-3 mb-4" id="cajaEdicionNombre" style="background-color: var(--bg-card); border: 1px solid var(--accent-blue);">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label text-brand-blue small fw-bold mb-0"><i class="bi bi-pencil-square me-2"></i>Modificar Nombre del Producto</label>
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0 fw-bold" onclick="confirmarEliminacion()">
+                            <i class="bi bi-trash3-fill me-1"></i>Eliminar Producto
+                        </button>
+                    </div>
+                    <form id="formEditNombre" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="submitFormAjax(event, this)" class="d-flex">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="actualizar_nombre">
+                        <input type="hidden" name="producto_id" class="hidden-prod-id">
+                        <input type="text" name="nuevo_nombre" id="inputEditNombre" class="form-control text-white me-3 fw-bold" style="border-color: rgba(0, 213, 255, 0.3);" required>
+                        <button type="submit" class="btn btn-brand-blue text-dark fw-bold px-4">
+                            <i class="bi bi-save-fill me-1"></i>Actualizar Nombre
+                        </button>
+                    </form>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-7" id="colCalculadora" style="transition: all 0.3s;">
+                        <form id="formCalculadora" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="submitFormAjax(event, this)">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="registrar_compra">
+                            <input type="hidden" name="productos_lote" id="inputProductosLoteJSON">
+                            <input type="hidden" id="factorCalculoHidden" value="1">
+
+                            <div class="card p-4 h-100" style="border-top: 3px solid var(--accent-blue);">
+                                <h5 class="fw-bold mb-4 text-brand-blue"><i class="bi bi-calculator me-2"></i>Calculadora de Lote</h5>
+                                
+                                <div id="contenedorLoteUI" class="mb-4 p-3 rounded" style="background-color: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                                    <label class="form-label text-white small fw-bold mb-3"><i class="bi bi-box-seam me-2"></i>Productos en esta Compra</label>
+                                    <div id="filasLote"></div>
+                                </div>
+
+                                <div class="p-3 mb-4 rounded" style="background-color: rgba(52, 211, 153, 0.05); border: 1px dashed var(--green-success);">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <label class="form-label text-brand-green small fw-bold mb-0"><i class="bi bi-gift-fill me-1"></i> BONIFICACIÓN</label>
+                                        <div class="form-check form-switch mb-0 d-flex align-items-center">
+                                            <input class="form-check-input switch-bono me-2" type="checkbox" id="switchTipoBono" onchange="toggleTipoBono()">
+                                            <label class="form-check-label text-brand-green small fw-bold mt-1" id="lblSwitchTipoBono">MISMO LOTE</label>
+                                        </div>
+                                    </div>
+
+                                    <div id="bloqueBonoMismo">
+                                        <input type="number" step="any" name="bonificacion" id="inputBonificacionVisible" class="form-control form-control-lg text-brand-green" style="border-color: var(--green-success);" placeholder="Total Unidades Gratis Recibidas" oninput="calcularCostosGenerales()">
+                                    </div>
+
+                                    <div id="bloqueBonoExterno" style="display: none;">
+                                        <div class="position-relative mb-2">
+                                            <input type="text" id="buscadorBonoInput" class="form-control form-control-sm text-white border-success" placeholder="Buscar producto de regalo...">
+                                            <ul id="listaResultadosBono" class="list-group position-absolute w-100" style="display: none; z-index: 1050;"></ul>
+                                        </div>
+                                        
+                                        <div id="listaBonosAgregados" class="mt-2"></div>
+                                        <input type="hidden" name="bonos_externos_json" id="inputBonosExternosJSON">
+                                    </div>
+                                </div>
+
+                                <div class="p-4 mb-4 rounded" style="background-color: rgba(0, 213, 255, 0.05); border: 1px dashed var(--accent-blue);">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3" style="border-bottom: 1px solid rgba(0, 213, 255, 0.2);">
+                                        <label class="form-label text-brand-blue small fw-bold mb-0"><i class="bi bi-cash-coin"></i> MÉTODO DE INGRESO</label>
+                                        <div class="form-check form-switch mb-0 d-flex align-items-center">
+                                            <input class="form-check-input switch-costo me-2" type="checkbox" id="switchModoCosto" onchange="toggleModoCosto()" checked>
+                                            <label class="form-check-label text-brand-orange small fw-bold mt-1" id="lblSwitchCosto">PAGO TOTAL LOTE</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="text-brand-orange small fw-bold mb-2" id="lblMontoCosto">Monto TOTAL pagado (S/)</label>
+                                        <div class="input-group input-group-lg">
+                                            <span class="input-group-text bg-transparent text-white" style="border-color: var(--accent-orange);">S/</span>
+                                            <input type="number" step="any" name="costo_total" id="inputMontoInteligente" class="form-control text-white fw-bold" style="border-color: var(--accent-orange);" placeholder="0.00" oninput="calcularCostosGenerales()" required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mt-3">
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: var(--bg-main); border: 1px solid var(--border-color); text-align: center;">
+                                                <small class="text-muted d-block" style="font-size: 0.7rem;">Costo Neto Unitario General</small>
+                                                <span class="text-white fw-bold" id="infoCostoUnitario" style="color: var(--red-danger) !important;">S/ 0.00</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="p-2 rounded" style="background-color: var(--bg-main); border: 1px solid var(--border-color); text-align: center;">
+                                                <small class="text-muted d-block" style="font-size: 0.7rem;">Unid. Totales Base</small>
+                                                <span class="text-brand-blue fw-bold" id="infoUnidadesTotales">0 unid.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 mb-4 rounded" style="background-color: rgba(52, 211, 153, 0.05); border: 1px solid var(--green-success);">
+                                    <label class="form-label text-brand-green small fw-bold mb-3"><i class="bi bi-tags"></i> PRECIOS DE VENTA (Aplica a todo el lote)</label>
+
+                                    <div class="row mb-3 align-items-center">
+                                        <div class="col-md-5">
+                                            <label class="form-label text-brand-green small">Margen (Mayor)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="any" id="inputMargenMayor" class="form-control text-white" style="border-color: var(--green-success);" placeholder="Ej: 20" oninput="calcularPreciosDesdeMargen()">
+                                                <span class="input-group-text bg-transparent text-brand-green" style="border-color: var(--green-success);">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 text-center text-muted small fw-bold mt-3">➔</div>
+                                        <div class="col-md-5">
+                                            <label class="form-label text-brand-green small fw-bold">Precio Mayor (Unid. S/)</label>
+                                            <input type="number" step="any" name="precio_mayor" id="inputPrecioMayor" class="form-control text-white fw-bold mb-2" style="border-color: var(--green-success);" required oninput="calcularMargenDesdePrecios()">
+                                            
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-transparent text-brand-green" style="border-color: var(--green-success); font-size: 0.7rem;">Total Paquete S/</span>
+                                                <input type="number" step="any" id="inputPrecioPaquete" class="form-control text-white fw-bold" style="border-color: var(--green-success); background-color: rgba(52, 211, 153, 0.05);" oninput="calcularDesdePrecioPaquete()">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row align-items-center">
+                                        <div class="col-md-5">
+                                            <label class="form-label text-brand-orange small">Margen (Menor)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="any" id="inputMargenMenor" class="form-control text-white" style="border-color: var(--accent-orange);" placeholder="Ej: 30" oninput="calcularPreciosDesdeMargen()">
+                                                <span class="input-group-text bg-transparent text-brand-orange" style="border-color: var(--accent-orange);">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 text-center text-muted small fw-bold mt-3">➔</div>
+                                        <div class="col-md-5">
+                                            <label class="form-label text-brand-orange small fw-bold">Precio Público (Unid. S/)</label>
+                                            <input type="number" step="any" name="precio_menor" id="inputPrecioMenor" class="form-control text-white fw-bold" style="border-color: var(--accent-orange);" required oninput="calcularMargenDesdePrecios()">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-brand-orange w-100 mt-auto"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Registrar Costos y Actualizar Lote</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="col-lg-5" id="colConfiguracion">
+                        <form id="formConfiguracion" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="submitFormAjax(event, this)">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="guardar_configuracion">
+                            <input type="hidden" name="producto_id" class="hidden-prod-id">
+                            <input type="hidden" name="producto_nombre" class="hidden-prod-nombre">
+                            <input type="hidden" name="tipo_configuracion" id="inputTipoConfig" value="paquete">
+
+                            <div id="panelDinamicoApp" class="panel-dinamico panel-paquete h-100 d-flex flex-column">
+                                <div class="d-flex justify-content-between align-items-center mb-4 pb-2" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <h5 class="fw-bold mb-0 text-brand-orange" id="tituloConfig"><i class="bi bi-box-seam me-2"></i>Config. Específica</h5>
+                                    <div class="form-check form-switch mb-0 d-flex align-items-center">
+                                        <input class="form-check-input switch-config me-2" type="checkbox" id="switchModoDinamico" onchange="toggleModoConfig()" checked>
+                                        <label class="form-check-label text-brand-orange small fw-bold mt-1" id="lblSwitchConfig">PAQUETE</label>
+                                    </div>
+                                </div>
+
+                                <div id="bloqueModoPaquete">
+                                    <div class="mb-3">
+                                        <label class="form-label text-white small fw-bold">Nombre del Paquete/Caja</label>
+                                        <input type="text" name="paquete_nombre" id="inputPaqueteNombre" class="form-control" placeholder="Ej: CAJA X 12 UNI">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label text-brand-orange small fw-bold">Unidades por Caja (Factor)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-transparent text-brand-orange" style="border-color: var(--accent-orange);"><i class="bi bi-box"></i></span>
+                                            <input type="number" step="any" name="factor_paquete" id="inputFactorPaquete" class="form-control fw-bold text-brand-orange" style="border-color: var(--accent-orange);" value="1" oninput="sincronizarFactorLote()">
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <label class="form-label text-white small fw-bold">Código de barras de la Caja</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-transparent"><i class="bi bi-upc-scan text-white"></i></span>
+                                            <input type="text" name="paquete_codigo" id="inputPaqueteCodigo" class="form-control" placeholder="Escanear...">
+                                            <button type="button" class="btn btn-brand-blue" onclick="generarCodigo(this)">Generar <i class="bi bi-magic"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="bloqueModoVolumen" style="display: none;">
+                                    
+                                    <div class="mb-3 p-3 rounded" style="background-color: rgba(0, 213, 255, 0.05); border: 1px solid var(--accent-blue);">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-primary"><i class="bi bi-1-circle me-1"></i>Nivel 1</span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label text-brand-blue small fw-bold">Nombre en App (Opcional)</label>
+                                            <input type="text" name="volumen_nombre" id="inputConfigNombreVolumen" class="form-control" placeholder="Ej: POR DOCENA">
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label text-brand-blue small fw-bold">Cant. Mínima</label>
+                                                <input type="number" step="any" name="cantidad_minima" id="inputCantidadMinima" class="form-control text-white" style="border-color: var(--accent-blue);" placeholder="Ej: 6">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-brand-blue small fw-bold">Precio (Unid)</label>
+                                                <input type="number" step="0.01" name="precio_volumen_oferta" id="inputPrecioVolumenOferta" class="form-control text-brand-blue fw-bold" style="border-color: var(--accent-blue);" placeholder="S/ 0.00">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="bloqueNivel2" class="mb-3 p-3 rounded" style="display: none; background-color: rgba(255, 102, 0, 0.05); border: 1px solid var(--accent-orange);">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-2-circle me-1"></i>Nivel 2</span>
+                                            <button type="button" class="btn btn-sm text-danger p-0" onclick="quitarNivel(2)"><i class="bi bi-trash3-fill"></i></button>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label text-brand-orange small fw-bold">Nombre en App</label>
+                                            <input type="text" name="volumen_nombre_2" id="inputConfigNombreVolumen2" class="form-control" placeholder="Ej: POR CAJA">
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label text-brand-orange small fw-bold">Cant. Mínima</label>
+                                                <input type="number" step="any" name="cantidad_minima_2" id="inputCantidadMinima2" class="form-control text-white" style="border-color: var(--accent-orange);" placeholder="Ej: 12">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-brand-orange small fw-bold">Precio (Unid)</label>
+                                                <input type="number" step="0.01" name="precio_volumen_oferta_2" id="inputPrecioVolumenOferta2" class="form-control text-brand-orange fw-bold" style="border-color: var(--accent-orange);" placeholder="S/ 0.00">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="bloqueNivel3" class="mb-3 p-3 rounded" style="display: none; background-color: rgba(52, 211, 153, 0.05); border: 1px solid var(--green-success);">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-success"><i class="bi bi-3-circle me-1"></i>Nivel 3</span>
+                                            <button type="button" class="btn btn-sm text-danger p-0" onclick="quitarNivel(3)"><i class="bi bi-trash3-fill"></i></button>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label text-brand-green small fw-bold">Nombre en App</label>
+                                            <input type="text" name="volumen_nombre_3" id="inputConfigNombreVolumen3" class="form-control" placeholder="Ej: POR MAYORISTA">
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label text-brand-green small fw-bold">Cant. Mínima</label>
+                                                <input type="number" step="any" name="cantidad_minima_3" id="inputCantidadMinima3" class="form-control text-white" style="border-color: var(--green-success);" placeholder="Ej: 50">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label text-brand-green small fw-bold">Precio (Unid)</label>
+                                                <input type="number" step="0.01" name="precio_volumen_oferta_3" id="inputPrecioVolumenOferta3" class="form-control text-brand-green fw-bold" style="border-color: var(--green-success);" placeholder="S/ 0.00">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" id="btnAgregarNivel" class="btn btn-outline-info w-100 mb-4" onclick="agregarNivel()">
+                                        <i class="bi bi-plus-circle-dotted me-2"></i>Añadir Nivel de Escala
+                                    </button>
+                                </div>
+
+                                <button type="submit" id="btnGuardarConfig" class="btn btn-brand-orange w-100 mt-auto py-3 fw-bold">
+                                    <i class="bi bi-shield-check me-2"></i>Guardar Reglas Específicas
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="pestanaRegistro" style="display: none;">
+            <div class="mb-4">
+                <h3 class="fw-bold mb-0 text-white">Registro Financiero e Inteligencia de Negocio</h3>
+                <p class="text-muted mb-0">Evalúa tus compras y usa el interruptor de cada fila para proyectar tus ganancias reales.</p>
+            </div>
+            
+            <div class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <div class="p-3 rounded-3" style="background-color: var(--bg-card); border-left: 4px solid var(--red-danger); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p class="text-muted small fw-bold mb-1"><i class="bi bi-wallet2 me-1"></i> INVERSIÓN (COMPRAS)</p>
+                        <h4 class="fw-bold mb-0 text-white" id="ticketInversion">S/ 0.00</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded-3" style="background-color: var(--bg-card); border-left: 4px solid var(--accent-blue); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p class="text-muted small fw-bold mb-1"><i class="bi bi-graph-up-arrow me-1"></i> PROYECCIÓN VENTA</p>
+                        <h4 class="fw-bold mb-0 text-white" id="ticketVenta">S/ 0.00</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded-3" style="background-color: var(--bg-card); border-left: 4px solid var(--green-success); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p class="text-muted small fw-bold mb-1"><i class="bi bi-cash-stack me-1"></i> GANANCIA NETA</p>
+                        <h4 class="fw-bold mb-0 text-white" id="ticketGanancia">S/ 0.00</h4>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 rounded-3" style="background-color: var(--bg-card); border-left: 4px solid var(--accent-orange); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p class="text-muted small fw-bold mb-1"><i class="bi bi-percent me-1"></i> MARGEN DE VENTA</p>
+                        <h4 class="fw-bold mb-0 text-white" id="ticketMargen">0.00%</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-3 mb-4" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+                <div class="row g-3 align-items-end m-0">
+                    <div class="col-md-7">
+                        <form id="formFiltroFechas" action="{% url 'gestionar_compras' %}" onsubmit="filtrarHistorial(event)" class="row g-2 m-0">
+                            {% csrf_token %}
+                            <div class="col-md-5">
+                                <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-calendar-event me-1"></i> Fecha Desde</label>
+                                <input type="date" id="fechaDesde" name="fecha_desde" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-calendar-event-fill me-1"></i> Fecha Hasta</label>
+                                <input type="date" id="fechaHasta" name="fecha_hasta" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-sm btn-brand-blue w-100 fw-bold pb-2">Filtrar</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <label class="form-label text-brand-orange small fw-bold"><i class="bi bi-search me-1"></i> Buscar / Filtrar Producto</label>
+                        <div class="d-flex">
+                            <select id="filtroEstadoVisual" class="form-select form-select-sm bg-dark text-white border-secondary me-2" style="width: 140px;" onchange="aplicarFiltrosLocales()">
+                                <option value="true">✅ Activas</option>
+                                <option value="false">❌ Anuladas</option>
+                            </select>
+                            <input type="text" id="buscadorTablaHistorial" class="form-control form-control-sm border-secondary text-white" placeholder="Ej: OREO..." oninput="aplicarFiltrosLocales()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-white"><i class="bi bi-receipt me-2 text-brand-orange"></i>Últimas Entradas de Mercadería <span class="badge bg-secondary ms-2 fw-normal" style="font-size: 0.65rem;">Doble clic en fila para auditar compra</span></h5>
+                </div>
+                
+                <div class="table-responsive" style="border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
+                    <table class="table align-middle">
+                        <thead class="table-custom-header">
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Cant. Base</th>
+                                <th>Bonificación</th>
+                                <th>Costo Pagado</th>
+                                <th>P. Mayor</th>
+                                <th>P. Público</th>
+                                <th>Modo Proyección</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaHistorialBody">
+                            {% for item in historial %}
+                            <tr class="fila-historial {% if item.activo == False %}fila-anulada{% endif %}"
+                                data-activo="{{ item.activo|yesno:'true,false'|default:'true' }}"
+                                ondblclick="abrirModalEdicion(this)"
+                                data-compraid="{{ item.compra_id }}"
+                                data-productoid="{{ item.producto_id }}"
+                                data-cantidad="{{ item.cantidad }}"
+                                data-factor="{{ item.factor }}"
+                                data-bono="{{ item.bonificacion }}"
+                                data-costo="{{ item.total_pagado }}"
+                                data-pmayor="{{ item.precio_mayor }}"
+                                data-pmenor="{{ item.precio_menor }}">
+                                
+                                <td class="col-fecha">{{ item.fecha }}</td>
+                                <td class="col-producto">{{ item.producto }}</td>
+                                <td>
+                                    <span class="cant-base-badge">
+                                        {% if item.cantidad == 0 and item.total_pagado > 0 %}1{% elif item.cantidad|floatformat:3|slice:"-3:" == "000" %}{{ item.cantidad|floatformat:0 }}{% else %}{{ item.cantidad|floatformat:3 }}{% endif %}
+                                    </span>
+                                    <span class="cant-multiplicador">(x{{ item.factor|floatformat:0 }})</span>
+                                </td>
+                                <td>
+                                    <span class="badge-bonif"><i class="bi bi-gift-fill me-1"></i> +{{ item.bonificacion|floatformat:0 }}</span>
+                                </td>
+                                <td>
+                                    <span class="costo-text">S/ {{ item.total_pagado|floatformat:2 }}</span>
+                                </td>
+                                <td class="precio-regular">S/ {{ item.precio_mayor|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge-precio-venta">S/ {{ item.precio_menor|floatformat:2 }}</span>
+                                </td>
+                                
+                                <td>
+                                    <div class="form-check form-switch mb-0 d-flex flex-column align-items-center">
+                                        <input class="form-check-input switch-proyeccion mx-0 mb-1" type="checkbox" onchange="toggleProyeccion(this)" {% if item.is_menor %}checked{% endif %}>
+                                        <label class="form-check-label text-brand-orange small fw-bold toggle-label" style="font-size: 0.65rem;">POR MAYOR</label>
+                                    </div>
+                                </td>
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevoProducto" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--accent-orange); box-shadow: 0 0 20px rgba(255, 102, 0, 0.2);">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-brand-orange"><i class="bi bi-box-seam-fill me-2"></i>Crear Nuevo Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formNuevoProducto" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="submitFormAjax(event, this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="crear_producto">
+                <div class="modal-body pt-0">
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Nombre del Producto</label>
+                        <input type="text" name="nuevo_nombre" class="form-control" placeholder="Ej: GALLETAS OREO 36G" required autocomplete="off">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Categoría del Producto</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent"><i class="bi bi-tags-fill text-white"></i></span>
+                            <select name="nueva_categoria_id" id="selectorCategoriasFirebase" class="form-select" required>
+                                <option value="" disabled selected>Cargando desde Firebase...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-white small fw-bold">Código de Barras de la Unidad</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent"><i class="bi bi-upc-scan text-white"></i></span>
+                            <input type="text" name="nuevo_codigo_barras" id="inputNuevoCodigoModal" class="form-control" placeholder="Escanea o genera" autocomplete="off">
+                            <button type="button" class="btn btn-brand-blue" onclick="generarCodigo(this)">Generar</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 p-3 rounded" style="background-color: rgba(0, 213, 255, 0.05); border: 1px dashed rgba(0, 213, 255, 0.3);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-check-label text-brand-blue small fw-bold" style="cursor: pointer;" for="switchPrecioModal"><i class="bi bi-tag-fill me-1"></i> Asignar Precio Inicial (Opcional)</label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input switch-config" type="checkbox" id="switchPrecioModal" onchange="togglePrecioModal()">
+                            </div>
+                        </div>
+                        <div id="bloquePrecioModal" style="display: none;" class="row mt-3">
+                            <div class="col-6">
+                                <label class="text-brand-orange small fw-bold">P. Público (S/)</label>
+                                <input type="number" step="any" name="nuevo_precio_menor" id="inputNuevoPrecioMenor" class="form-control form-control-sm text-white fw-bold" placeholder="0.00">
+                            </div>
+                            <div class="col-6">
+                                <label class="text-brand-green small fw-bold">P. Mayor (S/)</label>
+                                <input type="number" step="any" name="nuevo_precio_mayor" id="inputNuevoPrecioMayor" class="form-control form-control-sm text-white fw-bold" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-check-label text-white small fw-bold" id="lblModalTipoVenta"><i class="bi bi-123 me-1"></i> Venta por UNIDAD</label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input switch-granel" type="checkbox" name="nuevo_es_granel" id="switchModalTipoVenta" onchange="toggleModalTipoVenta()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-brand-orange text-dark fw-bold rounded-3"><i class="bi bi-save me-2"></i>Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEdicionHistorial" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--accent-blue); box-shadow: 0 0 20px rgba(0, 213, 255, 0.2);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-brand-blue"><i class="bi bi-shield-check me-2"></i>Auditoría de Compra</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEdicionHistorial" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="submitFormAjax(event, this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="actualizar_precios_historial">
+                <input type="hidden" name="compra_id" id="modalEditCompraId">
+                <input type="hidden" name="producto_id" id="modalEditProductoId">
+                <input type="hidden" name="producto_nombre" id="modalEditProductoNombre">
+                
+                <div class="modal-body pt-3">
+                    <div class="p-3 mb-4 rounded text-center" style="background-color: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2);">
+                        <span class="badge bg-secondary mb-2" id="modalEditNombreDisplay" style="font-size: 0.9rem;">PRODUCTO</span>
+                        <p class="text-muted small mb-0">Costo Neto Unitario Actualizado</p>
+                        <h4 class="text-white fw-bold mb-0" id="modalEditCosto">S/ 0.00</h4>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-4">
+                            <label class="form-label text-brand-blue small fw-bold">Cant. (Kg/Unid)</label>
+                            <input type="number" step="any" id="modalEditCantidad" name="cantidad" class="form-control form-control-sm text-white" oninput="recalcularCostoModal()" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label text-brand-blue small fw-bold">Factor Cajas</label>
+                            <input type="number" step="any" id="modalEditFactor" name="factor" class="form-control form-control-sm text-white" oninput="recalcularCostoModal()" required>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label text-brand-orange small fw-bold">Costo Pagado</label>
+                            <input type="number" step="any" id="modalEditCostoTotal" name="costo_total" class="form-control form-control-sm text-white fw-bold" style="border-color: var(--accent-orange);" oninput="recalcularCostoModal()" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 p-2 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-check-label text-white small fw-bold"><i class="bi bi-speedometer2 me-1 text-brand-orange"></i> Venta a GRANEL</label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input switch-granel" type="checkbox" id="modalEditEsGranel">
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="border-secondary opacity-25">
+
+                    <div class="row mb-3 align-items-center mt-3">
+                        <div class="col-5">
+                            <label class="form-label text-brand-green small">Margen (Mayor)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="any" id="modalEditMargenMayor" class="form-control text-white" style="border-color: var(--green-success);" oninput="calcularPreciosModal()">
+                                <span class="input-group-text bg-transparent text-brand-green" style="border-color: var(--green-success);">%</span>
+                            </div>
+                        </div>
+                        <div class="col-2 text-center text-muted small fw-bold">➔</div>
+                        <div class="col-5">
+                            <label class="form-label text-brand-green small fw-bold">P. Mayor (S/)</label>
+                            <input type="number" step="any" name="precio_mayor" id="modalEditPMayor" class="form-control form-control-sm text-white fw-bold" style="border-color: var(--green-success);" required oninput="calcularMargenesModal()">
+                        </div>
+                    </div>
+
+                    <div class="row align-items-center">
+                        <div class="col-5">
+                            <label class="form-label text-brand-orange small">Margen (Menor)</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" step="any" id="modalEditMargenMenor" class="form-control text-white" style="border-color: var(--accent-orange);" oninput="calcularPreciosModal()">
+                                <span class="input-group-text bg-transparent text-brand-orange" style="border-color: var(--accent-orange);">%</span>
+                            </div>
+                        </div>
+                        <div class="col-2 text-center text-muted small fw-bold">➔</div>
+                        <div class="col-5">
+                            <label class="form-label text-brand-orange small fw-bold">P. Público (S/)</label>
+                            <input type="number" step="any" name="precio_menor" id="modalEditPMenor" class="form-control form-control-sm text-white fw-bold" style="border-color: var(--accent-orange);" required oninput="calcularMargenesModal()">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 d-flex justify-content-between">
+                    <button type="button" id="btnToggleActivo" class="btn btn-outline-danger rounded-3 me-auto">Anular</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-brand-blue text-dark fw-bold rounded-3"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Guardar Auditoría</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // =========================================================
+    // LÓGICA DE NIVELES (AGREGAR / QUITAR)
+    // =========================================================
+    let nivelesActivos = 1;
+
+    function agregarNivel() {
+        if (nivelesActivos === 1) {
+            document.getElementById('bloqueNivel2').style.display = 'block';
+            nivelesActivos = 2;
+        } else if (nivelesActivos === 2) {
+            document.getElementById('bloqueNivel3').style.display = 'block';
+            document.getElementById('btnAgregarNivel').style.display = 'none';
+            nivelesActivos = 3;
+        }
+    }
+
+    function quitarNivel(nivel) {
+        if (nivel === 3) {
+            document.getElementById('bloqueNivel3').style.display = 'none';
+            document.getElementById('inputConfigNombreVolumen3').value = '';
+            document.getElementById('inputCantidadMinima3').value = '';
+            document.getElementById('inputPrecioVolumenOferta3').value = '';
+            document.getElementById('btnAgregarNivel').style.display = 'block';
+            nivelesActivos = 2;
+        } else if (nivel === 2) {
+            if (nivelesActivos === 3) {
+                mostrarToast("Debes eliminar el Nivel 3 primero", "danger");
+                return;
+            }
+            document.getElementById('bloqueNivel2').style.display = 'none';
+            document.getElementById('inputConfigNombreVolumen2').value = '';
+            document.getElementById('inputCantidadMinima2').value = '';
+            document.getElementById('inputPrecioVolumenOferta2').value = '';
+            nivelesActivos = 1;
+        }
+    }
+
+    // =========================================================
+    // TABS Y DASHBOARD
+    // =========================================================
+    function cambiarPestana(pestaña) {
+        document.getElementById('pestanaCostos').style.display = 'none';
+        document.getElementById('pestanaRegistro').style.display = 'none';
+        document.getElementById('menuCostos').classList.remove('active');
+        document.getElementById('menuRegistro').classList.remove('active');
+        
+        if(pestaña === 'costos') {
+            document.getElementById('pestanaCostos').style.display = 'block';
+            document.getElementById('menuCostos').classList.add('active');
+        } else {
+            document.getElementById('pestanaRegistro').style.display = 'block';
+            document.getElementById('menuRegistro').classList.add('active');
+            calcularTicketsFinancieros(); 
+        }
+    }
+
+    function calcularTicketsFinancieros() {
+        let totalInversion = 0;
+        let totalVenta = 0;
+
+        const filas = document.querySelectorAll('.fila-historial');
+        
+        filas.forEach(fila => {
+            if (fila.style.display === 'none') return;
+            // NUEVO: Ignorar en el dashboard si la compra está anulada (Soft Delete)
+            if (fila.getAttribute('data-activo') === 'false') return;
+
+            let cantidad = parseSeguro(fila.getAttribute('data-cantidad'));
+            const factor = parseSeguro(fila.getAttribute('data-factor'));
+            const bono = parseSeguro(fila.getAttribute('data-bono'));
+            const costo = parseSeguro(fila.getAttribute('data-costo'));
+            const pMayor = parseSeguro(fila.getAttribute('data-pmayor'));
+            const pMenor = parseSeguro(fila.getAttribute('data-pmenor'));
+
+            if (cantidad === 0 && costo > 0) cantidad = 1;
+
+            const toggle = fila.querySelector('.switch-proyeccion');
+            const label = fila.querySelector('.toggle-label');
+            const isMenor = toggle.checked;
+
+            if (isMenor) {
+                label.innerText = 'POR MENOR';
+                label.className = 'form-check-label text-brand-blue small fw-bold toggle-label';
+            } else {
+                label.innerText = 'POR MAYOR';
+                label.className = 'form-check-label text-brand-orange small fw-bold toggle-label';
+            }
+
+            const unidadesTotales = (cantidad * factor) + bono;
+            let precioVenta = isMenor ? pMenor : pMayor;
+            
+            if (precioVenta === 0 && pMenor > 0) {
+                precioVenta = pMenor; 
+                if (!isMenor) {
+                    label.innerText = 'P. MENOR (Auto)';
+                    label.className = 'form-check-label text-brand-blue small fw-bold toggle-label opacity-75';
+                }
+            }
+
+            totalInversion += costo;
+            totalVenta += (unidadesTotales * precioVenta);
+        });
+
+        const ganancia = totalVenta - totalInversion;
+        const margen = totalVenta > 0 ? (ganancia / totalVenta) * 100 : 0;
+
+        document.getElementById('ticketInversion').innerText = `S/ ${totalInversion.toFixed(2)}`;
+        document.getElementById('ticketVenta').innerText = `S/ ${totalVenta.toFixed(2)}`;
+        document.getElementById('ticketGanancia').innerText = `S/ ${ganancia.toFixed(2)}`;
+        document.getElementById('ticketMargen').innerText = `${margen.toFixed(1)}%`;
+    }
+
+    // =========================================================
+    // FILTROS HISTORIAL (CON NUEVO FILTRO VISUAL)
+    // =========================================================
+    function aplicarFiltrosLocales() {
+        const termino = document.getElementById('buscadorTablaHistorial').value.toLowerCase();
+        const estadoVisual = document.getElementById('filtroEstadoVisual').value;
+        
+        document.querySelectorAll('.fila-historial').forEach(fila => {
+            const nombre = fila.querySelector('.col-producto').innerText.toLowerCase();
+            const esActivo = fila.getAttribute('data-activo');
+            
+            const coincideTexto = nombre.includes(termino);
+            const coincideEstado = esActivo === estadoVisual;
+            
+            fila.style.display = (coincideTexto && coincideEstado) ? '' : 'none';
+        });
+        calcularTicketsFinancieros();
+    }
+
+    async function filtrarHistorial(event) {
+        event.preventDefault();
+        const form = event.target;
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Filtrando...';
+        btn.disabled = true;
+
+        const formData = new FormData(form);
+        formData.append('action', 'filtrar_historial');
+        formData.append('ajax', 'true');
+
+        try {
+            const response = await fetch(form.getAttribute('action'), { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await response.json();
+            if (data.status === 'success') {
+                renderizarTablaHistorial(data.historial);
+                document.getElementById('buscadorTablaHistorial').value = ''; 
+                aplicarFiltrosLocales();
+                mostrarToast('Historial actualizado correctamente', 'success');
+            } else mostrarToast(data.message, 'danger');
+        } catch (error) { mostrarToast('Error al conectar con el servidor', 'danger'); } 
+        finally { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+
+    function renderizarTablaHistorial(historial) {
+        const tbody = document.getElementById('tablaHistorialBody');
+        tbody.innerHTML = '';
+
+        if (historial.length === 0) {
+            tbody.innerHTML = '<tr><td colspan=\"8\" class=\"text-center text-muted py-4 fw-bold\">No se encontraron compras en este rango de fechas.</td></tr>';
+            calcularTicketsFinancieros();
+            return;
+        }
+
+        historial.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = 'fila-historial';
+            const isActivo = item.activo !== false;
+            
+            tr.setAttribute('data-activo', isActivo);
+            if (!isActivo) {
+                tr.classList.add('fila-anulada');
+            }
+            
+            tr.setAttribute('ondblclick', 'abrirModalEdicion(this)');
+            tr.setAttribute('data-compraid', item.compra_id || '');
+            tr.setAttribute('data-productoid', item.producto_id || '');
+            tr.setAttribute('data-cantidad', item.cantidad || 0);
+            tr.setAttribute('data-factor', item.factor || 1);
+            tr.setAttribute('data-bono', item.bonificacion || 0);
+            tr.setAttribute('data-costo', item.total_pagado || 0);
+            tr.setAttribute('data-pmayor', item.precio_mayor || 0);
+            tr.setAttribute('data-pmenor', item.precio_menor || 0);
+
+            let cantTxt = typeof item.cantidad === 'number' ? item.cantidad.toFixed(3) : '1.000';
+            if (cantTxt.endsWith('.000')) cantTxt = parseFloat(cantTxt).toFixed(0);
+            if (cantTxt === '0' && item.total_pagado > 0) cantTxt = '1';
+
+            const factorTxt = typeof item.factor === 'number' ? item.factor.toFixed(0) : '1';
+            const bonoTxt = typeof item.bonificacion === 'number' ? item.bonificacion.toFixed(0) : '0';
+            const pagadoTxt = typeof item.total_pagado === 'number' ? item.total_pagado.toFixed(2) : '0.00';
+            const pMayorTxt = typeof item.precio_mayor === 'number' ? item.precio_mayor.toFixed(2) : '0.00';
+            const pMenorTxt = typeof item.precio_menor === 'number' ? item.precio_menor.toFixed(2) : '0.00';
+            const isChecked = item.is_menor ? 'checked' : '';
+
+            tr.innerHTML = `
+                <td class="col-fecha">${item.fecha}</td>
+                <td class="col-producto">${item.producto}</td>
+                <td><span class="cant-base-badge">${cantTxt}</span><span class="cant-multiplicador">(x${factorTxt})</span></td>
+                <td><span class="badge-bonif"><i class="bi bi-gift-fill me-1"></i> +${bonoTxt}</span></td>
+                <td><span class="costo-text">S/ ${pagadoTxt}</span></td>
+                <td class="precio-regular">S/ ${pMayorTxt}</td>
+                <td><span class="badge-precio-venta">S/ ${pMenorTxt}</span></td>
+                <td><div class="form-check form-switch mb-0 d-flex flex-column align-items-center"><input class="form-check-input switch-proyeccion mx-0 mb-1" type="checkbox" onchange="toggleProyeccion(this)" ${isChecked}><label class="form-check-label text-brand-orange small fw-bold toggle-label" style="font-size: 0.65rem;">POR MAYOR</label></div></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        aplicarFiltrosLocales();
+    }
+
+    // =========================================================
+    // MODAL AUDITORÍA (Doble clic) & TOGGLE DE ANULACIÓN
+    // =========================================================
+    function abrirModalEdicion(tr) {
+        trModalActual = tr;
+        const productoId = tr.getAttribute('data-productoid');
+        const compraId = tr.getAttribute('data-compraid');
+        const nombre = tr.querySelector('.col-producto').innerText;
+        
+        let cantidad = parseSeguro(tr.getAttribute('data-cantidad'));
+        const factor = parseSeguro(tr.getAttribute('data-factor')) || 1;
+        const bono = parseSeguro(tr.getAttribute('data-bono'));
+        const costoTotal = parseSeguro(tr.getAttribute('data-costo'));
+        const pMayor = parseSeguro(tr.getAttribute('data-pmayor'));
+        const pMenor = parseSeguro(tr.getAttribute('data-pmenor'));
+
+        if (cantidad === 0 && costoTotal > 0) cantidad = 1;
+
+        const prod = productosBase.find(p => p.id === productoId);
+        const esGranel = prod ? (prod.venta_granel === true) : false;
+
+        document.getElementById('modalEditCompraId').value = compraId;
+        document.getElementById('modalEditProductoId').value = productoId;
+        document.getElementById('modalEditProductoNombre').value = nombre;
+        document.getElementById('modalEditNombreDisplay').innerText = nombre;
+
+        document.getElementById('modalEditCantidad').value = cantidad;
+        document.getElementById('modalEditFactor').value = factor;
+        document.getElementById('modalEditCostoTotal').value = costoTotal.toFixed(2);
+        document.getElementById('modalEditEsGranel').checked = esGranel;
+        document.getElementById('modalEdicionHistorial').setAttribute('data-bono', bono);
+
+        document.getElementById('modalEditPMayor').value = pMayor.toFixed(2);
+        document.getElementById('modalEditPMenor').value = pMenor.toFixed(2);
+
+        const esActivo = tr.getAttribute('data-activo') !== 'false';
+        const btnToggle = document.getElementById('btnToggleActivo');
+        btnToggle.innerHTML = esActivo ? '<i class="bi bi-x-circle"></i> Anular Compra' : '<i class="bi bi-check-circle"></i> Reactivar Compra';
+        btnToggle.className = esActivo ? 'btn btn-outline-danger rounded-3 me-auto' : 'btn btn-outline-success rounded-3 me-auto';
+        btnToggle.onclick = () => toggleEstadoCompraAjax(compraId, !esActivo);
+
+        recalcularCostoModal();
+        // Usamos getOrCreateInstance para evitar crear sombras oscuras duplicadas
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEdicionHistorial')).show();
+    }
+
+
+    async function toggleEstadoCompraAjax(compraId, nuevoEstado) {
+        const formData = new FormData();
+        formData.append('action', 'toggle_estado_compra');
+        formData.append('compra_id', compraId);
+        formData.append('activo', nuevoEstado);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('ajax', 'true');
+        
+        try {
+            const res = await fetch('{% url "gestionar_compras" %}', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await res.json();
+            if (data.status === 'success') {
+                trModalActual.setAttribute('data-activo', nuevoEstado);
+                
+                if (nuevoEstado) {
+                    trModalActual.classList.remove('fila-anulada');
+                } else {
+                    trModalActual.classList.add('fila-anulada');
+                }
+                
+                bootstrap.Modal.getInstance(document.getElementById('modalEdicionHistorial')).hide();
+                aplicarFiltrosLocales();
+                mostrarToast(nuevoEstado ? '✅ Compra reactivada' : '❌ Compra anulada y excluida', 'success');
+            }
+        } catch(e) {}
+    }
+
+    function recalcularCostoModal() {
+        const cantidad = parseSeguro(document.getElementById('modalEditCantidad').value);
+        const factor = parseSeguro(document.getElementById('modalEditFactor').value) || 1;
+        const costoTotal = parseSeguro(document.getElementById('modalEditCostoTotal').value);
+        const bono = parseSeguro(document.getElementById('modalEdicionHistorial').getAttribute('data-bono'));
+
+        const unidadesTotales = (cantidad * factor) + bono;
+        costoUnitarioModal = unidadesTotales > 0 ? (costoTotal / unidadesTotales) : 0;
+
+        document.getElementById('modalEditCosto').innerText = "S/ " + costoUnitarioModal.toFixed(3);
+        calcularMargenesModal();
+    }
+
+    function calcularPreciosModal() {
+        let margenMayor = parseSeguro(document.getElementById('modalEditMargenMayor').value);
+        let margenMenor = parseSeguro(document.getElementById('modalEditMargenMenor').value);
+        if (costoUnitarioModal > 0) {
+            if (margenMayor > 0 && margenMayor < 100) document.getElementById('modalEditPMayor').value = (costoUnitarioModal / ((100 - margenMayor) / 100)).toFixed(2);
+            if (margenMenor > 0 && margenMenor < 100) document.getElementById('modalEditPMenor').value = (costoUnitarioModal / ((100 - margenMenor) / 100)).toFixed(2);
+        }
+    }
+
+    function calcularMargenesModal() {
+        let precioMayor = parseSeguro(document.getElementById('modalEditPMayor').value);
+        let precioMenor = parseSeguro(document.getElementById('modalEditPMenor').value);
+
+        if (costoUnitarioModal > 0) {
+            if (precioMayor > costoUnitarioModal) document.getElementById('modalEditMargenMayor').value = (100 - ((costoUnitarioModal / precioMayor) * 100)).toFixed(1);
+            else document.getElementById('modalEditMargenMayor').value = ''; 
+
+            if (precioMenor > costoUnitarioModal) document.getElementById('modalEditMargenMenor').value = (100 - ((costoUnitarioModal / precioMenor) * 100)).toFixed(1);
+            else document.getElementById('modalEditMargenMenor').value = '';
+        } else {
+            document.getElementById('modalEditMargenMayor').value = '';
+            document.getElementById('modalEditMargenMenor').value = '';
+        }
+    }
+
+    function toggleProyeccion(checkbox) {
+        calcularTicketsFinancieros();
+        const tr = checkbox.closest('tr');
+        const compraId = tr.getAttribute('data-compraid');
+        const isMenor = checkbox.checked;
+
+        if (compraId) guardarProyeccionAjax(compraId, isMenor);
+    }
+
+    async function guardarProyeccionAjax(compraId, isMenor) {
+        const formData = new FormData();
+        formData.append('action', 'actualizar_proyeccion');
+        formData.append('compra_id', compraId);
+        formData.append('is_menor', isMenor);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('ajax', 'true');
+        try { await fetch('{% url "gestionar_compras" %}', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } }); } 
+        catch (error) { console.error("Error guardando proyección:", error); }
+    }
+
+    // =========================================================
+    // LÓGICA DE BONIFICACIÓN EXTERNA CRUZADA
+    // =========================================================
+    function toggleTipoBono() {
+        const isExterno = document.getElementById('switchTipoBono').checked;
+        const lbl = document.getElementById('lblSwitchTipoBono');
+        const bloqueMismo = document.getElementById('bloqueBonoMismo');
+        const bloqueExterno = document.getElementById('bloqueBonoExterno');
+
+        if (isExterno) {
+            lbl.innerText = "OTRO PRODUCTO";
+            bloqueMismo.style.display = 'none';
+            bloqueExterno.style.display = 'block';
+            document.getElementById('inputBonificacionVisible').value = '';
+        } else {
+            lbl.innerText = "MISMO LOTE";
+            bloqueMismo.style.display = 'block';
+            bloqueExterno.style.display = 'none';
+            limpiarBonoExterno();
+        }
+        calcularCostosGenerales();
+    }
+
+    document.getElementById('buscadorBonoInput').addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        const lista = document.getElementById('listaResultadosBono');
+        lista.innerHTML = ''; 
+        if (query.length === 0) { lista.style.display = 'none'; return; }
+
+        const filtrados = productosBase.filter(p => p.nombre.toLowerCase().includes(query));
+        const maxResultados = filtrados.slice(0, 4);
+
+        if (maxResultados.length > 0) {
+            lista.style.display = 'block';
+            maxResultados.forEach(prod => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-action resultado-item py-2 d-flex justify-content-between align-items-center';
+                
+                const safePrice = parseSeguro(prod.precio_actual).toFixed(2);
+                li.innerHTML = `<span class="fw-bold text-white small">${prod.nombre}</span> <span class="badge bg-success">S/ ${safePrice}</span>`;
+                
+                li.onclick = () => {
+                    lista.style.display = 'none';
+                    document.getElementById('buscadorBonoInput').value = '';
+                    
+                    if (!bonosExternosLista.find(b => b.id === prod.id)) {
+                        bonosExternosLista.push({
+                            id: prod.id,
+                            nombre: prod.nombre,
+                            precio: parseSeguro(prod.precio_actual),
+                            cantidad: 1
+                        });
+                        renderBonosExternos();
+                    }
+                };
+                lista.appendChild(li);
+            });
+        }
+    });
+
+    function renderBonosExternos() {
+        const contenedor = document.getElementById('listaBonosAgregados');
+        contenedor.innerHTML = '';
+        
+        bonosExternosLista.forEach(bono => {
+            const div = document.createElement('div');
+            div.className = 'd-flex align-items-center mb-2 p-2 rounded';
+            div.style.backgroundColor = 'rgba(52, 211, 153, 0.1)';
+            div.style.border = '1px dashed var(--green-success)';
+            
+            div.innerHTML = `
+                <div class="flex-grow-1 text-white small fw-bold text-truncate me-2">${bono.nombre}</div>
+                <div class="text-success small fw-bold me-2">S/ ${bono.precio.toFixed(2)}</div>
+                <input type="number" step="any" class="form-control form-control-sm border-success text-center me-2 text-white" value="${bono.cantidad}" style="width: 70px;" oninput="actualizarCantidadBono('${bono.id}', this.value)" placeholder="Cant.">
+                <button type="button" class="btn btn-sm text-danger p-0" onclick="removerBonoExterno('${bono.id}')"><i class="bi bi-trash3-fill"></i></button>
+            `;
+            contenedor.appendChild(div);
+        });
+
+        document.getElementById('inputBonosExternosJSON').value = JSON.stringify(bonosExternosLista);
+        calcularCostosGenerales();
+    }
+
+    function actualizarCantidadBono(id, val) {
+        const bono = bonosExternosLista.find(b => b.id === id);
+        if (bono) {
+            bono.cantidad = parseSeguro(val);
+            document.getElementById('inputBonosExternosJSON').value = JSON.stringify(bonosExternosLista);
+            calcularCostosGenerales();
+        }
+    }
+
+    function removerBonoExterno(id) {
+        bonosExternosLista = bonosExternosLista.filter(b => b.id !== id);
+        renderBonosExternos();
+    }
+
+    function limpiarBonoExterno() {
+        bonosExternosLista = [];
+        renderBonosExternos();
+        document.getElementById('buscadorBonoInput').style.display = 'block';
+        document.getElementById('buscadorBonoInput').value = '';
+    }
+
+    // =========================================================
+    // LÓGICA DE MULTIPRODUCTO (LOTE) Y PAQUETE VISUAL
+    // =========================================================
+    function renderLote() {
+        const contenedor = document.getElementById('filasLote');
+        contenedor.innerHTML = '';
+        
+        if (loteCompras.length === 0) {
+            document.getElementById('areaGestion').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('areaGestion').style.display = 'block';
+        document.getElementById('cajaEdicionNombre').style.display = 'block';
+        document.getElementById('colConfiguracion').style.display = 'block';
+        document.getElementById('colCalculadora').className = 'col-lg-7';
+
+        loteCompras.forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'fila-lote d-flex align-items-center mb-2 p-2';
+            row.id = 'lote-row-' + p.id;
+            
+            const idEnEdicion = document.querySelector('.hidden-prod-id').value;
+            if(p.id === idEnEdicion) {
+                row.style.borderLeft = '4px solid var(--accent-orange)';
+                row.style.backgroundColor = 'rgba(255, 102, 0, 0.05)';
+            }
+
+            row.innerHTML = `
+                <div class="flex-grow-1 text-white fw-bold small text-truncate" title="${p.nombre}" style="cursor: pointer;" onclick="enfocarProductoConfig('${p.id}')">${p.nombre}</div>
+                <div style="width: 90px;" class="mx-1">
+                    <input type="number" step="any" class="form-control form-control-sm text-center border-secondary" value="${p.cantidad || ''}" oninput="actualizarLote('${p.id}', 'cantidad', this.value)" placeholder="Cajas">
+                </div>
+                <div class="text-muted small mx-1">x</div>
+                <div style="width: 80px;" class="mx-1">
+                    <input type="number" step="any" class="form-control form-control-sm text-center border-secondary input-factor-lote" value="${p.factor}" oninput="actualizarLote('${p.id}', 'factor', this.value)" placeholder="Factor">
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger ms-2 border-0" onclick="removerDelLote('${p.id}')"><i class="bi bi-x-lg"></i></button>
+            `;
+            contenedor.appendChild(row);
+        });
+
+        document.getElementById('inputProductosLoteJSON').value = JSON.stringify(loteCompras);
+        calcularCostosGenerales();
+    }
+
+    function enfocarProductoConfig(id) {
+        const prod = productosBase.find(p => p.id === id);
+        if (!prod) return;
+
+        // 1. Datos básicos
+        document.querySelectorAll('.hidden-prod-id').forEach(el => el.value = prod.id);
+        document.querySelectorAll('.hidden-prod-nombre').forEach(el => el.value = prod.nombre);
+        document.getElementById('inputEditNombre').value = prod.nombre;
+
+        // 2. Carga de Paquete 
+        document.getElementById('inputPaqueteNombre').value = prod.paquete_nombre || '';
+        document.getElementById('inputFactorPaquete').value = parseSeguro(prod.paquete_cantidad) || 1;
+        document.getElementById('inputPaqueteCodigo').value = prod.paquete_codigo || '';
+        
+        // 3. Carga de Nivel 1
+        document.getElementById('inputConfigNombreVolumen').value = prod.volumen_nombre || '';
+        document.getElementById('inputCantidadMinima').value = parseSeguro(prod.volumen_cantidad) || '';
+        document.getElementById('inputPrecioVolumenOferta').value = parseSeguro(prod.volumen_precio_oferta) || '';
+
+        // 4. Carga de Nivel 2
+        document.getElementById('inputConfigNombreVolumen2').value = prod.volumen_nombre_2 || '';
+        document.getElementById('inputCantidadMinima2').value = parseSeguro(prod.volumen_cantidad_2) || '';
+        document.getElementById('inputPrecioVolumenOferta2').value = parseSeguro(prod.volumen_precio_2) || '';
+
+        // 5. Carga de Nivel 3
+        document.getElementById('inputConfigNombreVolumen3').value = prod.volumen_nombre_3 || '';
+        document.getElementById('inputCantidadMinima3').value = parseSeguro(prod.volumen_cantidad_3) || '';
+        document.getElementById('inputPrecioVolumenOferta3').value = parseSeguro(prod.volumen_precio_3) || '';
+
+        // 6. Lógica visual para mostrar 1, 2 o 3 niveles
+        nivelesActivos = 1;
+        document.getElementById('bloqueNivel2').style.display = 'none';
+        document.getElementById('bloqueNivel3').style.display = 'none';
+        document.getElementById('btnAgregarNivel').style.display = 'block';
+
+        if (parseSeguro(prod.volumen_cantidad_3) > 0) {
+            nivelesActivos = 3;
+            document.getElementById('bloqueNivel2').style.display = 'block';
+            document.getElementById('bloqueNivel3').style.display = 'block';
+            document.getElementById('btnAgregarNivel').style.display = 'none';
+        } else if (parseSeguro(prod.volumen_cantidad_2) > 0) {
+            nivelesActivos = 2;
+            document.getElementById('bloqueNivel2').style.display = 'block';
+        }
+
+        // 7. Renderizar
+        const loteProd = loteCompras.find(p => p.id === id);
+        document.getElementById('factorCalculoHidden').value = loteProd ? loteProd.factor : (parseSeguro(prod.paquete_cantidad) || 1);
+
+        renderLote(); 
+        calcularMargenDesdePrecios();
+    }
+
+    function actualizarLote(id, campo, valor) {
+        const prod = loteCompras.find(p => p.id === id);
+        if (prod) {
+            prod[campo] = parseSeguro(valor);
+            document.getElementById('inputProductosLoteJSON').value = JSON.stringify(loteCompras);
+            
+            let idEnEdicion = document.querySelector('.hidden-prod-id').value;
+            if (id === idEnEdicion && campo === 'factor') {
+                document.getElementById('inputFactorPaquete').value = prod.factor;
+                document.getElementById('factorCalculoHidden').value = prod.factor;
+            }
+            
+            calcularCostosGenerales();
+        }
+    }
+
+    function removerDelLote(id) {
+        loteCompras = loteCompras.filter(p => p.id !== id);
+        renderLote();
+    }
+
+    document.getElementById('buscadorInput').addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        const listaResultados = document.getElementById('listaResultados');
+        listaResultados.innerHTML = ''; 
+        if (query.length === 0) { listaResultados.style.display = 'none'; return; }
+
+        const filtrados = productosBase.filter(p => p.nombre.toLowerCase().includes(query));
+        const maxResultados = filtrados.slice(0, 5);
+
+        if (maxResultados.length > 0) {
+            listaResultados.style.display = 'block';
+            maxResultados.forEach(prod => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-action resultado-item py-3 d-flex justify-content-between align-items-center';
+                li.innerHTML = `<span class="fw-bold text-white">${prod.nombre}</span> <i class="bi bi-plus-circle text-brand-blue"></i>`;
+                
+                li.onclick = () => {
+                    document.getElementById('buscadorInput').value = '';
+                    listaResultados.style.display = 'none';
+                    
+                    if (!loteCompras.find(x => x.id === prod.id)) {
+                        loteCompras.push({
+                            id: prod.id,
+                            nombre: prod.nombre,
+                            cantidad: 1, 
+                            factor: parseSeguro(prod.paquete_cantidad) || 1,
+                            precio_anterior: parseSeguro(prod.precio_actual)
+                        });
+                        
+                        if (loteCompras.length === 1) {
+                            document.getElementById('inputPrecioMenor').value = parseSeguro(prod.precio_actual).toFixed(2);
+                            document.getElementById('inputPrecioMayor').value = parseSeguro(prod.precio_mayor).toFixed(2);
+                        }
+                    }
+                    enfocarProductoConfig(prod.id);
+                };
+                listaResultados.appendChild(li);
+            });
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('buscadorInput').contains(e.target) && !document.getElementById('listaResultados').contains(e.target)) {
+            document.getElementById('listaResultados').style.display = 'none';
+        }
+    });
+
+    // =========================================================
+    // LÓGICA AJAX MAESTRA
+    // =========================================================
+    async function submitFormAjax(event, form) {
+        event.preventDefault(); 
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Guardando...';
+        btn.disabled = true;
+
+        const formData = new FormData(form);
+        
+        if(form.id === 'formEdicionHistorial') {
+            formData.set('es_granel', document.getElementById('modalEditEsGranel').checked);
+            formData.append('bono', document.getElementById('modalEdicionHistorial').getAttribute('data-bono'));
+        }
+
+        formData.append('ajax', 'true'); 
+
+        try {
+            const response = await fetch(form.getAttribute('action'), { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                mostrarToast(data.message, 'success');
+                
+                if (data.nuevo_producto) {
+                    productosBase.push(data.nuevo_producto);
+                    bootstrap.Modal.getInstance(document.getElementById('modalNuevoProducto')).hide();
+                    form.reset();
+                    if (document.getElementById('bloquePrecioModal')) {
+                        document.getElementById('bloquePrecioModal').style.display = 'none';
+                        document.getElementById('inputNuevoPrecioMenor').required = false;
+                        document.getElementById('inputNuevoPrecioMayor').required = false;
+                    }
+                }
+
+                if (data.nombre_actualizado) {
+                    const idActual = document.querySelector('.hidden-prod-id').value;
+                    const prodEditado = productosBase.find(p => p.id === idActual);
+                    if (prodEditado) prodEditado.nombre = data.nombre_actualizado;
+                    const loteProd = loteCompras.find(p => p.id === idActual);
+                    if (loteProd) loteProd.nombre = data.nombre_actualizado;
+                    renderLote();
+                }
+
+                if (form.id === 'formCalculadora') {
+                    loteCompras = [];
+                    document.getElementById('inputBonificacionVisible').value = '';
+                    document.getElementById('inputMontoInteligente').value = '';
+                    limpiarBonoExterno();
+                    renderLote(); 
+                }
+
+                if (form.id === 'formEdicionHistorial' && trModalActual) {
+                    const nMayor = parseSeguro(document.getElementById('modalEditPMayor').value);
+                    const nMenor = parseSeguro(document.getElementById('modalEditPMenor').value);
+                    const nCant = parseSeguro(document.getElementById('modalEditCantidad').value);
+                    const nFact = parseSeguro(document.getElementById('modalEditFactor').value);
+                    const nCosto = parseSeguro(document.getElementById('modalEditCostoTotal').value);
+                    const esGranel = document.getElementById('modalEditEsGranel').checked;
+
+                    const prodId = trModalActual.getAttribute('data-productoid');
+                    const prodBase = productosBase.find(p => p.id === prodId);
+                    if (prodBase) prodBase.venta_granel = esGranel;
+
+                    trModalActual.setAttribute('data-pmayor', nMayor);
+                    trModalActual.setAttribute('data-pmenor', nMenor);
+                    trModalActual.setAttribute('data-cantidad', nCant);
+                    trModalActual.setAttribute('data-factor', nFact);
+                    trModalActual.setAttribute('data-costo', nCosto);
+                    
+                    trModalActual.querySelector('.precio-regular').innerText = 'S/ ' + nMayor.toFixed(2);
+                    trModalActual.querySelector('.badge-precio-venta').innerText = 'S/ ' + nMenor.toFixed(2);
+                    trModalActual.querySelector('.costo-text').innerText = 'S/ ' + nCosto.toFixed(2);
+                    
+                    let cantTxt = nCant.toFixed(3);
+                    if (cantTxt.endsWith('.000')) cantTxt = nCant.toFixed(0);
+                    trModalActual.querySelector('.cant-base-badge').innerText = cantTxt;
+                    trModalActual.querySelector('.cant-multiplicador').innerText = '(x' + nFact.toFixed(0) + ')';
+
+                    calcularTicketsFinancieros();
+                    bootstrap.Modal.getInstance(document.getElementById('modalEdicionHistorial')).hide();
+                }
+
+            } else mostrarToast(data.message, 'danger');
+        } catch (error) { mostrarToast('Error de conexión', 'danger'); } 
+        finally { btn.innerHTML = originalText; btn.disabled = false; }
+    }
+
+    function mostrarToast(mensaje, tipo) {
+        const toastEl = document.getElementById('liveToast');
+        toastEl.classList.remove('border-success', 'border-danger', 'border-info');
+        toastEl.style.borderLeftColor = tipo === 'success' ? '#34D399' : (tipo === 'danger' ? '#F87171' : '#00D5FF');
+        document.getElementById('toastMessage').innerHTML = mensaje;
+        new bootstrap.Toast(toastEl).show();
+    }
+
+    function confirmarEliminacion() {
+        const idProducto = document.querySelector('.hidden-prod-id').value;
+        const nombreProducto = document.getElementById('inputEditNombre').value;
+        if (!idProducto) return;
+        if (confirm(`⚠️ ADVERTENCIA ⚠️\n\n¿Estás seguro de que deseas ELIMINAR "${nombreProducto}"?`)) {
+            const formData = new FormData();
+            formData.append('action', 'eliminar_producto');
+            formData.append('producto_id', idProducto);
+            formData.append('producto_nombre', nombreProducto);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            formData.append('ajax', 'true');
+            fetch(document.getElementById('formEditNombre').getAttribute('action'), { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(res => res.json()).then(data => {
+                if (data.status === 'success') {
+                    mostrarToast(data.message, 'success');
+                    const index = productosBase.findIndex(p => p.id === idProducto);
+                    if (index > -1) productosBase.splice(index, 1);
+                    loteCompras = [];
+                    renderLote();
+                } else mostrarToast(data.message, 'danger');
+            });
+        }
+    }
+
+    // =========================================================
+    // UTILIDADES MENORES
+    // =========================================================
+    function generarCodigo(btnElement) {
+        const random = Math.floor(10000000 + Math.random() * 90000000); 
+        btnElement.previousElementSibling.value = `PKG-${random}`;
+    }
+
+    function toggleModalTipoVenta() {
+        const isGranel = document.getElementById('switchModalTipoVenta').checked;
+        const lbl = document.getElementById('lblModalTipoVenta');
+        if (isGranel) {
+            lbl.innerHTML = '<i class="bi bi-speedometer2 me-1"></i> Venta a GRANEL';
+            lbl.className = "form-check-label text-brand-orange small fw-bold";
+        } else {
+            lbl.innerHTML = '<i class="bi bi-123 me-1"></i> Venta por UNIDAD';
+            lbl.className = "form-check-label text-white small fw-bold";
+        }
+    }
+
+    function togglePrecioModal() {
+        const isChecked = document.getElementById('switchPrecioModal').checked;
+        const bloquePrecio = document.getElementById('bloquePrecioModal');
+        const inputMenor = document.getElementById('inputNuevoPrecioMenor');
+        const inputMayor = document.getElementById('inputNuevoPrecioMayor');
+
+        if (isChecked) {
+            bloquePrecio.style.display = 'flex';
+            inputMenor.required = true;
+            inputMayor.required = true;
+        } else {
+            bloquePrecio.style.display = 'none';
+            inputMenor.required = false;
+            inputMayor.required = false;
+            inputMenor.value = '';
+            inputMayor.value = '';
+        }
+    }
+
+    function toggleModoConfig() {
+        const isPaquete = document.getElementById('switchModoDinamico').checked; 
+        const panelDinamico = document.getElementById('panelDinamicoApp');
+        const tituloConfig = document.getElementById('tituloConfig');
+        const lblSwitch = document.getElementById('lblSwitchConfig');
+        const inputTipoConfig = document.getElementById('inputTipoConfig');
+        const bloquePaquete = document.getElementById('bloqueModoPaquete');
+        const bloqueVolumen = document.getElementById('bloqueModoVolumen');
+
+        if (isPaquete) {
+            panelDinamico.className = "panel-dinamico panel-paquete h-100 d-flex flex-column";
+            tituloConfig.innerHTML = '<i class="bi bi-box-seam me-2"></i>Config. de Paquete';
+            tituloConfig.style.color = 'var(--accent-orange)'; 
+            lblSwitch.innerText = "PAQUETE";
+            lblSwitch.className = "form-check-label text-brand-orange small fw-bold mt-1";
+            inputTipoConfig.value = "paquete";
+            bloquePaquete.style.display = 'block';
+            bloqueVolumen.style.display = 'none';
+        } else {
+            panelDinamico.className = "panel-dinamico panel-volumen h-100 d-flex flex-column";
+            tituloConfig.innerHTML = '<i class="bi bi-graph-down-arrow me-2"></i>Precio Volumen';
+            tituloConfig.style.color = 'var(--accent-blue)'; 
+            lblSwitch.innerText = "VOLUMEN";
+            lblSwitch.className = "form-check-label text-brand-blue small fw-bold mt-1";
+            inputTipoConfig.value = "volumen";
+            bloquePaquete.style.display = 'none';
+            bloqueVolumen.style.display = 'block';
+        }
+    }
+
+    // =========================================================
+    // NUEVO: SINCRONIZADOR Y VISUALIZADOR DE TOTAL DE PAQUETE
+    // =========================================================
+    function sincronizarFactorLote() {
+        let nFactor = parseSeguro(document.getElementById('inputFactorPaquete').value);
+        document.getElementById('factorCalculoHidden').value = nFactor;
+        
+        let idEnEdicion = document.querySelector('.hidden-prod-id').value;
+        actualizarLote(idEnEdicion, 'factor', nFactor);
+        
+        const filaLote = document.getElementById('lote-row-' + idEnEdicion);
+        if (filaLote) {
+            const inputFactor = filaLote.querySelector('.input-factor-lote');
+            if (inputFactor) inputFactor.value = nFactor;
+        }
+        
+        calcularMargenDesdePrecios();
+    }
+
+    function calcularDesdePrecioPaquete() {
+        let precioPaquete = parseSeguro(document.getElementById('inputPrecioPaquete').value);
+        let factor = parseSeguro(document.getElementById('factorCalculoHidden').value) || 1;
+        
+        if (factor > 0) {
+            document.getElementById('inputPrecioMayor').value = (precioPaquete / factor).toFixed(2);
+        }
+        
+        calcularMargenDesdePrecios(false);
+    }
+
+    function toggleModoBono() {
+        const isBonoPaquete = document.getElementById('switchModoBono').checked;
+        const lblSwitchBono = document.getElementById('lblSwitchBono');
+        const inputBonoVisible = document.getElementById('inputBonificacionVisible');
+
+        if (isBonoPaquete) {
+            lblSwitchBono.innerText = "X CAJA BASE";
+            inputBonoVisible.placeholder = "Cajas Gratis";
+        } else {
+            lblSwitchBono.innerText = "X UNIDAD";
+            inputBonoVisible.placeholder = "Unid. Gratis";
+        }
+        calcularCostosGenerales();
+    }
+
+    function toggleModoCosto() {
+        const isTotal = document.getElementById('switchModoCosto').checked;
+        const lblSwitch = document.getElementById('lblSwitchCosto');
+        const lblMonto = document.getElementById('lblMontoCosto');
+
+        if (isTotal) {
+            lblSwitch.innerText = "PAGO TOTAL LOTE";
+            lblMonto.innerText = "Monto TOTAL pagado (S/)";
+        } else {
+            lblSwitch.innerText = "COSTO POR UNIDAD";
+            lblMonto.innerText = "Costo base individual (S/)";
+        }
+        calcularCostosGenerales();
+    }
+
+    function calcularCostosGenerales() {
+        if (loteCompras.length === 0) return;
+
+        let totalUnidadesBase = 0;
+        loteCompras.forEach(p => {
+            totalUnidadesBase += ((parseFloat(p.cantidad) || 0) * (parseFloat(p.factor) || 1));
+        });
+
+        const isTotal = document.getElementById('switchModoCosto').checked; 
+        const montoIngresado = parseSeguro(document.getElementById('inputMontoInteligente').value);
+        const isBonoExterno = document.getElementById('switchTipoBono').checked;
+        
+        let bonificacionFinalUnidades = 0;
+        let valorDescuentoExterno = 0;
+
+        if (isBonoExterno) {
+            bonosExternosLista.forEach(b => {
+                valorDescuentoExterno += (parseSeguro(b.cantidad) * parseSeguro(b.precio));
+            });
+        } else {
+            bonificacionFinalUnidades = parseSeguro(document.getElementById('inputBonificacionVisible').value);
+        }
+
+        const unidadesTotalesReales = totalUnidadesBase + bonificacionFinalUnidades; 
+        let costoTotalLote = isTotal ? montoIngresado : (montoIngresado * totalUnidadesBase);
+        
+        costoTotalLote = Math.max(0, costoTotalLote - valorDescuentoExterno);
+
+        costoUnitarioActual = unidadesTotalesReales > 0 ? (costoTotalLote / unidadesTotalesReales) : 0;
+
+        document.getElementById('infoUnidadesTotales').innerText = `${unidadesTotalesReales.toFixed(0)} unid.`;
+        document.getElementById('infoCostoUnitario').innerText = `S/ ${costoUnitarioActual.toFixed(3)}`;
+
+        calcularMargenDesdePrecios(); 
+    }
+
+    function calcularPreciosDesdeMargen() {
+        let margenMayor = parseSeguro(document.getElementById('inputMargenMayor').value);
+        let margenMenor = parseSeguro(document.getElementById('inputMargenMenor').value);
+
+        if (costoUnitarioActual > 0) {
+            if (margenMayor > 0 && margenMayor < 100) document.getElementById('inputPrecioMayor').value = (costoUnitarioActual / ((100 - margenMayor) / 100)).toFixed(2);
+            if (margenMenor > 0 && margenMenor < 100) document.getElementById('inputPrecioMenor').value = (costoUnitarioActual / ((100 - margenMenor) / 100)).toFixed(2);
+        }
+        
+        let precioMayor = parseSeguro(document.getElementById('inputPrecioMayor').value);
+        let factor = parseSeguro(document.getElementById('factorCalculoHidden').value) || 1;
+        document.getElementById('inputPrecioPaquete').value = (precioMayor * factor).toFixed(2);
+    }
+
+    function calcularMargenDesdePrecios(actualizarPaquete = true) {
+        let precioMayor = parseSeguro(document.getElementById('inputPrecioMayor').value);
+        let precioMenor = parseSeguro(document.getElementById('inputPrecioMenor').value);
+
+        if (costoUnitarioActual > 0) {
+            if (precioMayor > costoUnitarioActual) document.getElementById('inputMargenMayor').value = (100 - ((costoUnitarioActual / precioMayor) * 100)).toFixed(1);
+            else document.getElementById('inputMargenMayor').value = ''; 
+
+            if (precioMenor > costoUnitarioActual) document.getElementById('inputMargenMenor').value = (100 - ((costoUnitarioActual / precioMenor) * 100)).toFixed(1);
+            else document.getElementById('inputMargenMenor').value = '';
+        } else {
+            document.getElementById('inputMargenMayor').value = '';
+            document.getElementById('inputMargenMenor').value = '';
+        }
+        
+        if (actualizarPaquete) {
+            let factor = parseSeguro(document.getElementById('factorCalculoHidden').value) || 1;
+            document.getElementById('inputPrecioPaquete').value = (precioMayor * factor).toFixed(2);
+        }
+    }
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAxukeSa1El1XE9rU93CA2QW2MVrK5melg",
+      authDomain: "sistema-pos-930dd.firebaseapp.com",
+      projectId: "sistema-pos-930dd",
+      storageBucket: "sistema-pos-930dd.firebasestorage.app",
+      messagingSenderId: "986561008505",
+      appId: "1:986561008505:web:d802677eb1316c32c615a8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function cargarCategoriasFirebase() {
+        const selector = document.getElementById('selectorCategoriasFirebase');
+        try {
+            const querySnapshot = await getDocs(collection(db, "categorias"));
+            selector.innerHTML = '<option value="" disabled selected>Seleccione una categoría...</option>';
+            querySnapshot.forEach((doc) => {
+                const datos = doc.data();
+                const nombre = datos.nombre || datos.name || "Sin nombre"; 
+                selector.innerHTML += `<option value="${doc.id}" style="background-color: #161B29; color: white;">${nombre}</option>`;
+            });
+        } catch (error) {
+            selector.innerHTML = '<option value="" disabled selected>Error cargando categorías</option>';
+        }
+    }
+    cargarCategoriasFirebase();
+</script>    
+</body>
+</html>
+}
