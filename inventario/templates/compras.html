@@ -1341,31 +1341,29 @@
     });
 
     // =========================================================
-    // CALCULADORA INTELIGENTE PRECIO VOLUMEN (UNIDAD VS TOTAL)
-    // =========================================================
-    function calcularPreciosVolumen(nivel, origen = 'unidad') {
-        const inputCant = document.getElementById(nivel === 1 ? 'inputCantidadMinima' : `inputCantidadMinima${nivel}`);
-        const inputUnid = document.getElementById(nivel === 1 ? 'inputPrecioVolumenOferta' : `inputPrecioVolumenOferta${nivel}`);
-        const inputTotal = document.getElementById(`inputPrecioTotalVolumen${nivel}`);
-        
-        // Convertimos los valores a números (0 si están vacíos)
-        let cant = parseFloat(inputCant.value) || 0;
-        let unid = parseFloat(inputUnid.value) || 0;
-        let total = parseFloat(inputTotal.value) || 0;
+// CALCULADORA INTELIGENTE PRECIO VOLUMEN (UNIDAD VS TOTAL)
+// =========================================================
+function calcularPreciosVolumen(nivel, origen = 'unidad') {
+    const inputCant = document.getElementById(nivel === 1 ? 'inputCantidadMinima' : `inputCantidadMinima${nivel}`);
+    const inputUnid = document.getElementById(nivel === 1 ? 'inputPrecioVolumenOferta' : `inputPrecioVolumenOferta${nivel}`);
+    const inputTotal = document.getElementById(`inputPrecioTotalVolumen${nivel}`);
+    
+    let cant = parseFloat(inputCant.value) || 0;
+    let unid = parseFloat(inputUnid.value) || 0;
+    let total = parseFloat(inputTotal.value) || 0;
 
-        if (cant > 0) {
-            if (origen === 'total') {
-                // Si el usuario edita el TOTAL, calculamos el precio Unitario
-                inputUnid.value = (total / cant).toFixed(2);
-            } else if (origen === 'unidad' || origen === 'cantidad') {
-                // Si el usuario edita el UNITARIO o la CANTIDAD, calculamos el Total
-                inputTotal.value = (unid * cant).toFixed(2);
-            }
-        } else {
-            // Limpiamos el total si borran la cantidad
-            inputTotal.value = '';
+    if (cant > 0) {
+        if (origen === 'total') {
+            // CAMBIO AQUÍ: Usamos 4 decimales para no perder precisión en la división
+            inputUnid.value = (total / cant).toFixed(4);
+        } else if (origen === 'unidad' || origen === 'cantidad') {
+            // El total siempre es dinero final, así que se queda en 2 decimales
+            inputTotal.value = (unid * cant).toFixed(2);
         }
+    } else {
+        inputTotal.value = '';
     }
+}
 
     // =========================================================
     // LÓGICA AJAX MAESTRA
