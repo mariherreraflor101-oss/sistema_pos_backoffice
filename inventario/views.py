@@ -388,7 +388,6 @@ def gestionar_compras(request):
 
         if not is_ajax: return redirect('gestionar_compras')
 
-    # ---- MÉTODO GET: TRAER DATOS INICIALES ----
     productos_ref = db.collection('productos').stream()
     lista_productos = []
     for doc in productos_ref:
@@ -401,9 +400,20 @@ def gestionar_compras(request):
             'paquete_nombre': data.get('paquete_nombre', ''),
             'paquete_codigo': data.get('paquete_codigo', ''),
             'paquete_cantidad': data.get('paquete_cantidad', 1),
+            
+            # NIVEL 1
             'volumen_nombre': data.get('volumen_nombre', ''),
             'volumen_cantidad': data.get('volumen_cantidad', ''),
             'volumen_precio_oferta': data.get('volumen_precio', ''),
+            
+            # ⚠️ ¡ESTO FALTABA! AGREGAR NIVEL 2 Y 3:
+            'volumen_nombre_2': data.get('volumen_nombre_2', ''),
+            'volumen_cantidad_2': data.get('volumen_cantidad_2', ''),
+            'volumen_precio_2': data.get('volumen_precio_2', ''),
+            'volumen_nombre_3': data.get('volumen_nombre_3', ''),
+            'volumen_cantidad_3': data.get('volumen_cantidad_3', ''),
+            'volumen_precio_3': data.get('volumen_precio_3', ''),
+            
             'venta_granel': data.get('venta_granel', False)
         })
     productos_json = json.dumps(lista_productos)

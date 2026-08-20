@@ -1324,7 +1324,8 @@
                         
                         if (loteCompras.length === 1) {
                             document.getElementById('inputPrecioMenor').value = parseSeguro(prod.precio_actual).toFixed(2);
-                            document.getElementById('inputPrecioMayor').value = parseSeguro(prod.precio_mayor).toFixed(2);
+                            // CAMBIAR A 4 DECIMALES AQUÍ
+                            document.getElementById('inputPrecioMayor').value = parseSeguro(prod.precio_mayor).toFixed(4); 
                         }
                     }
                     enfocarProductoConfig(prod.id);
@@ -1584,7 +1585,8 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         let factor = parseSeguro(document.getElementById('factorCalculoHidden').value) || 1;
         
         if (factor > 0) {
-            document.getElementById('inputPrecioMayor').value = (precioPaquete / factor).toFixed(2);
+            // CAMBIAR A 4 DECIMALES AQUÍ
+            document.getElementById('inputPrecioMayor').value = (precioPaquete / factor).toFixed(4); 
         }
         
         calcularMargenDesdePrecios(false);
@@ -1661,7 +1663,10 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         let margenMenor = parseSeguro(document.getElementById('inputMargenMenor').value);
 
         if (costoUnitarioActual > 0) {
-            if (margenMayor > 0 && margenMayor < 100) document.getElementById('inputPrecioMayor').value = (costoUnitarioActual / ((100 - margenMayor) / 100)).toFixed(2);
+            if (margenMayor > 0 && margenMayor < 100) {
+                // CAMBIAR A 4 DECIMALES AQUÍ
+                document.getElementById('inputPrecioMayor').value = (costoUnitarioActual / ((100 - margenMayor) / 100)).toFixed(4);
+            }
             if (margenMenor > 0 && margenMenor < 100) document.getElementById('inputPrecioMenor').value = (costoUnitarioActual / ((100 - margenMenor) / 100)).toFixed(2);
         }
         
