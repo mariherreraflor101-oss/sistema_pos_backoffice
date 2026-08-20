@@ -122,7 +122,10 @@ def gestionar_compras(request):
                         'costo_unitario': costo_unitario_real,
                         'precio_menor_registrado': precio_menor,
                         'precio_mayor_registrado': precio_mayor,
-                        'is_menor': True,
+                        
+                        # 🔴 REEMPLAZA 'is_menor': True POR ESTO:
+                        'is_menor': False if precio_mayor > 0 else True,
+                        
                         'activo': True
                     })
 

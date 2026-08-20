@@ -540,7 +540,14 @@
                                 <td>
                                     <div class="form-check form-switch mb-0 d-flex flex-column align-items-center">
                                         <input class="form-check-input switch-proyeccion mx-0 mb-1" type="checkbox" onchange="toggleProyeccion(this)" {% if item.is_menor %}checked{% endif %}>
-                                        <label class="form-check-label text-brand-orange small fw-bold toggle-label" style="font-size: 0.65rem;">POR MAYOR</label>
+                                        
+                                        <!-- NUEVO: Etiqueta dinámica -->
+                                        {% if item.is_menor %}
+                                            <label class="form-check-label text-brand-blue small fw-bold toggle-label" style="font-size: 0.65rem;">POR MENOR</label>
+                                        {% else %}
+                                            <label class="form-check-label text-brand-orange small fw-bold toggle-label" style="font-size: 0.65rem;">POR MAYOR</label>
+                                        {% endif %}
+                                        
                                     </div>
                                 </td>
 
@@ -913,7 +920,10 @@
             const pagadoTxt = typeof item.total_pagado === 'number' ? item.total_pagado.toFixed(2) : '0.00';
             const pMayorTxt = typeof item.precio_mayor === 'number' ? item.precio_mayor.toFixed(2) : '0.00';
             const pMenorTxt = typeof item.precio_menor === 'number' ? item.precio_menor.toFixed(2) : '0.00';
+            // 🔴 AGREGA ESTAS DOS LÍNEAS NUEVAS AQUÍ:
             const isChecked = item.is_menor ? 'checked' : '';
+            const labelColor = item.is_menor ? 'text-brand-blue' : 'text-brand-orange';
+            const labelText = item.is_menor ? 'POR MENOR' : 'POR MAYOR';
 
             tr.innerHTML = `
                 <td class="col-fecha">${item.fecha}</td>
@@ -923,7 +933,9 @@
                 <td><span class="costo-text">S/ ${pagadoTxt}</span></td>
                 <td class="precio-regular">S/ ${pMayorTxt}</td>
                 <td><span class="badge-precio-venta">S/ ${pMenorTxt}</span></td>
-                <td><div class="form-check form-switch mb-0 d-flex flex-column align-items-center"><input class="form-check-input switch-proyeccion mx-0 mb-1" type="checkbox" onchange="toggleProyeccion(this)" ${isChecked}><label class="form-check-label text-brand-orange small fw-bold toggle-label" style="font-size: 0.65rem;">POR MAYOR</label></div></td>
+                
+                <!-- 🔴 ACTUALIZA ESTA LÍNEA PARA USAR LAS VARIABLES: -->
+                <td><div class="form-check form-switch mb-0 d-flex flex-column align-items-center"><input class="form-check-input switch-proyeccion mx-0 mb-1" type="checkbox" onchange="toggleProyeccion(this)" ${isChecked}><label class="form-check-label ${labelColor} small fw-bold toggle-label" style="font-size: 0.65rem;">${labelText}</label></div></td>
             `;
             tbody.appendChild(tr);
         });
