@@ -172,7 +172,7 @@ def gestionar_compras(request):
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al registrar lote: {str(e)}'})
                 
-        elif action == 'guardar_configuracion':
+        elif action == 'guardar_configuracion': 
             try:
                 producto_id = request.POST.get('producto_id')
                 producto_nombre = request.POST.get('producto_nombre')
@@ -388,6 +388,30 @@ def gestionar_compras(request):
                 if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Compra de {producto_nombre} corregida con éxito.'})
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al actualizar: {str(e)}'})
+        elif action == 'eliminar_compra':
+            try:
+                compra_id = request.POST.get('compra_id')
+                producto_nombre = request.POST.get('producto_nombre', 'Producto')
+                
+                if compra_id:
+                    # Eliminar el documento de la colección de compras
+                    db.collection('compras_inventario').document(compra_id).delete()
+                    
+                    # Registrar la acción en la auditoría
+                    db.collection('auditoria_productos').add({
+                        'tipo': 'ELIMINAR_COMPRA',
+                        'producto_nombre': producto_nombre,
+                        'detalle': f'Se eliminó permanentemente un registro de compra del historial.',
+                        'usuario': 'Admin Web',
+                        'fecha': firestore.SERVER_TIMESTAMP,
+                    })
+                    
+                    if is_ajax: return JsonResponse({'status': 'success', 'message': f'🗑️ La compra de {producto_nombre} fue eliminada permanentemente.'})
+            except Exception as e:
+                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al eliminar compra: {str(e)}'})        
+
+
+
 
         if not is_ajax: return redirect('gestionar_compras')
 

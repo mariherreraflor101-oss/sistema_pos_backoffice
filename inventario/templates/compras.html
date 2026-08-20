@@ -709,7 +709,15 @@
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0 d-flex justify-content-between">
-                    <button type="button" id="btnToggleActivo" class="btn btn-outline-danger rounded-3 me-auto">Anular</button>
+                    <!-- Botones de la izquierda (Anular y Eliminar) -->
+                    <div class="d-flex gap-2 me-auto">
+                        <button type="button" id="btnToggleActivo" class="btn btn-outline-warning rounded-3">Anular</button>
+                        <button type="button" class="btn btn-outline-danger rounded-3 px-3" onclick="confirmarEliminacionCompra()" title="Eliminar permanentemente">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Botones de la derecha (Cancelar y Guardar) -->
                     <div>
                         <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-brand-blue text-dark fw-bold rounded-3"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Guardar Auditoría</button>
@@ -1014,6 +1022,48 @@
                 mostrarToast(nuevoEstado ? '✅ Compra reactivada' : '❌ Compra anulada y excluida', 'success');
             }
         } catch(e) {}
+    }
+
+
+    function confirmarEliminacionCompra() {
+        const compraId = document.getElementById('modalEditCompraId').value;
+        const productoNombre = document.getElementById('modalEditProductoNombre').value;
+        
+        if (!compraId) return;
+        
+        // 1. Pregunta de seguridad
+        if (confirm(`⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\n\n¿Estás seguro de que deseas ELIMINAR PERMANENTEMENTE esta compra de "${productoNombre}"?\n\nEsta acción borrará el registro de la base de datos y no se puede deshacer.`)) {
+            
+            const formData = new FormData();
+            formData.append('action', 'eliminar_compra');
+            formData.append('compra_id', compraId);
+            formData.append('producto_nombre', productoNombre);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            formData.append('ajax', 'true');
+            
+            // 2. Enviar petición al servidor
+            fetch('{% url "gestionar_compras" %}', { 
+                method: 'POST', 
+                body: formData, 
+                headers: { 'X-Requested-With': 'XMLHttpRequest' } 
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    mostrarToast(data.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('modalEdicionHistorial')).hide();
+                    
+                    // 3. Remover la fila visualmente y recalcular finanzas
+                    if (trModalActual) {
+                        trModalActual.remove();
+                        calcularTicketsFinancieros();
+                    }
+                } else {
+                    mostrarToast(data.message, 'danger');
+                }
+            })
+            .catch(err => mostrarToast('Error al conectar con el servidor', 'danger'));
+        }
     }
 
     function recalcularCostoModal() {
