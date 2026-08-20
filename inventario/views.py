@@ -410,7 +410,43 @@ def gestionar_compras(request):
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al eliminar compra: {str(e)}'})        
 
+        elif action == 'editar_producto_catalogo':
+            try:
+                producto_id = request.POST.get('producto_id')
+                nombre = request.POST.get('editar_nombre', '').strip().upper()
+                codigo_barras = request.POST.get('editar_codigo_barras', '').strip()
+                es_granel = request.POST.get('editar_es_granel') == 'on'
+                categoria_id = request.POST.get('editar_categoria_id')
+                
+                precio_menor = to_float(request.POST.get('editar_precio_menor'))
+                precio_mayor = to_float(request.POST.get('editar_precio_mayor'))
+                
+                if producto_id:
+                    datos_actualizar = {
+                        'nombre': nombre,
+                        'codigo_barras': codigo_barras,
+                        'venta_granel': es_granel,
+                        'precio': precio_menor,             
+                        'volumen_precio': precio_mayor,
+                    }
+                    if categoria_id:
+                        datos_actualizar['categoria_id'] = categoria_id
 
+                    db.collection('productos').document(producto_id).update(datos_actualizar)
+                    
+                    db.collection('auditoria_productos').add({
+                        'tipo': 'EDICION_CATALOGO',
+                        'producto_nombre': nombre,
+                        'detalle': f'Editado desde Catálogo. P. Público: S/{precio_menor:.2f} | Mayor: S/{precio_mayor:.2f}',
+                        'usuario': 'Admin Web',
+                        'fecha': firestore.SERVER_TIMESTAMP,
+                    })
+                    
+                    if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Producto "{nombre}" actualizado.', 'datos': datos_actualizar})
+            except Exception as e:
+                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al editar: {str(e)}'})
+
+        
 
 
         if not is_ajax: return redirect('gestionar_compras')
@@ -428,8 +464,13 @@ def gestionar_compras(request):
             'paquete_codigo': data.get('paquete_codigo', ''),
             'paquete_cantidad': data.get('paquete_cantidad', 1),
             
+            # 🔴 NUEVO: Extraer campos para el Catálogo
+            'codigo_barras': data.get('codigo_barras', ''),
+            'categoria_id': data.get('categoria_id', ''),
+            
             # NIVEL 1
             'volumen_nombre': data.get('volumen_nombre', ''),
+            # ... resto del código ...
             'volumen_cantidad': data.get('volumen_cantidad', ''),
             'volumen_precio_oferta': data.get('volumen_precio', ''),
             

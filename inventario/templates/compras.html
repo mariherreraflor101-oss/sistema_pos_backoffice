@@ -122,6 +122,9 @@
         <a class="sidebar-link" id="menuRegistro" onclick="cambiarPestana('registro')">
             <i class="bi bi-receipt-cutoff me-2"></i> Registro Financiero
         </a>
+        <a class="sidebar-link" id="menuCatalogo" onclick="cambiarPestana('catalogo')">
+            <i class="bi bi-journal-text me-2"></i> Catálogo Maestro
+        </a>
     </div>
 
     <div class="flex-grow-1 p-4">
@@ -558,6 +561,50 @@
                 </div>
             </div>
         </div>
+
+        <!-- PESTAÑA DE CATÁLOGO -->
+        <div id="pestanaCatalogo" style="display: none;">
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-0 text-white">Catálogo Maestro</h3>
+                    <p class="text-muted mb-0">Gestiona tus productos, códigos, categorías y precios base rápidamente.</p>
+                </div>
+                <button type="button" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Crear Nuevo
+                </button>
+            </div>
+
+            <div class="card p-3 mb-4" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-search text-brand-orange me-3 fs-4"></i>
+                    <input type="text" id="buscadorCatalogo" class="form-control bg-transparent border-0 text-white shadow-none fs-5" placeholder="Buscar por nombre o código de barras..." oninput="filtrarCatalogo()">
+                </div>
+            </div>
+
+            <div class="card p-0" style="overflow: hidden; border: 1px solid var(--border-color);">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-custom-header">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Código Barras</th>
+                                <th>P. Público</th>
+                                <th>P. Mayor</th>
+                                <th>Modo</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCatalogoBody">
+                            <!-- Se llena con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+
+
     </div>
 </div>
 
@@ -625,6 +672,61 @@
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-brand-orange text-dark fw-bold rounded-3"><i class="bi bi-save me-2"></i>Guardar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalEditarCatalogo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--accent-blue);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-brand-blue"><i class="bi bi-pencil-square me-2"></i>Editar en Catálogo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formEditarCatalogo" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="guardarEdicionCatalogo(event, this)">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="editar_producto_catalogo">
+                <input type="hidden" name="producto_id" id="editCatId">
+                <div class="modal-body pt-3">
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Nombre del Producto</label>
+                        <input type="text" name="editar_nombre" id="editCatNombre" class="form-control text-white fw-bold" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-white small fw-bold">Categoría</label>
+                        <select name="editar_categoria_id" id="editCatCategoria" class="form-select text-white">
+                            <option value="" disabled selected>Cargando...</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-white small fw-bold">Código de Barras</label>
+                        <input type="text" name="editar_codigo_barras" id="editCatCodigo" class="form-control text-white">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="text-brand-orange small fw-bold">P. Público (S/)</label>
+                            <input type="number" step="any" name="editar_precio_menor" id="editCatPMenor" class="form-control text-white fw-bold" style="border-color: var(--accent-orange);">
+                        </div>
+                        <div class="col-6">
+                            <label class="text-brand-green small fw-bold">P. Mayor (S/)</label>
+                            <input type="number" step="any" name="editar_precio_mayor" id="editCatPMayor" class="form-control text-white fw-bold" style="border-color: var(--green-success);">
+                        </div>
+                    </div>
+                    <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-check-label text-white small fw-bold" id="lblEditCatGranel"><i class="bi bi-speedometer2 me-1 text-brand-orange"></i> Venta a GRANEL</label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input switch-granel" type="checkbox" name="editar_es_granel" id="editCatGranel">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-brand-blue text-dark fw-bold rounded-3"><i class="bi bi-save me-2"></i>Guardar Cambios</button>
                 </div>
             </form>
         </div>
@@ -770,23 +872,132 @@
         }
     }
 
-    // =========================================================
-    // TABS Y DASHBOARD
-    // =========================================================
     function cambiarPestana(pestaña) {
         document.getElementById('pestanaCostos').style.display = 'none';
         document.getElementById('pestanaRegistro').style.display = 'none';
+        document.getElementById('pestanaCatalogo').style.display = 'none';
+        
         document.getElementById('menuCostos').classList.remove('active');
         document.getElementById('menuRegistro').classList.remove('active');
+        document.getElementById('menuCatalogo').classList.remove('active');
         
         if(pestaña === 'costos') {
             document.getElementById('pestanaCostos').style.display = 'block';
             document.getElementById('menuCostos').classList.add('active');
-        } else {
+        } else if(pestaña === 'registro') {
             document.getElementById('pestanaRegistro').style.display = 'block';
             document.getElementById('menuRegistro').classList.add('active');
             calcularTicketsFinancieros(); 
+        } else if(pestaña === 'catalogo') {
+            document.getElementById('pestanaCatalogo').style.display = 'block';
+            document.getElementById('menuCatalogo').classList.add('active');
+            renderizarCatalogo(productosBase);
         }
+    }
+
+    // =========================================================
+    // LÓGICA DEL CATÁLOGO MAESTRO
+    // =========================================================
+    function renderizarCatalogo(lista) {
+        const tbody = document.getElementById('tablaCatalogoBody');
+        tbody.innerHTML = '';
+        
+        lista.forEach(p => {
+            const pMenor = parseSeguro(p.precio_actual).toFixed(2);
+            const pMayor = parseSeguro(p.precio_mayor).toFixed(2);
+            const badgeModo = p.venta_granel 
+                ? '<span class="badge bg-warning text-dark"><i class="bi bi-speedometer2"></i> Granel</span>'
+                : '<span class="badge bg-secondary"><i class="bi bi-123"></i> Unidad</span>';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fw-bold text-white">${p.nombre}</td>
+                <td class="text-muted"><i class="bi bi-upc me-1"></i> ${p.codigo_barras || 'Sin código'}</td>
+                <td><span class="badge-precio-venta">S/ ${pMenor}</span></td>
+                <td class="text-brand-green fw-bold">S/ ${pMayor}</td>
+                <td>${badgeModo}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-info border-0 me-2" onclick="abrirEdicionCatalogo('${p.id}')"><i class="bi bi-pencil-square"></i></button>
+                    <!-- Reutilizamos tu función de eliminar ya existente -->
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="eliminarDesdeCatalogo('${p.id}', '${p.nombre}')"><i class="bi bi-trash3-fill"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filtrarCatalogo() {
+        const query = document.getElementById('buscadorCatalogo').value.toLowerCase().trim();
+        const filtrados = productosBase.filter(p => 
+            p.nombre.toLowerCase().includes(query) || 
+            (p.codigo_barras && p.codigo_barras.toLowerCase().includes(query))
+        );
+        renderizarCatalogo(filtrados);
+    }
+
+    function abrirEdicionCatalogo(id) {
+        const p = productosBase.find(x => x.id === id);
+        if(!p) return;
+        
+        document.getElementById('editCatId').value = p.id;
+        document.getElementById('editCatNombre').value = p.nombre;
+        document.getElementById('editCatCodigo').value = p.codigo_barras || '';
+        document.getElementById('editCatPMenor').value = parseSeguro(p.precio_actual).toFixed(2);
+        document.getElementById('editCatPMayor').value = parseSeguro(p.precio_mayor).toFixed(2);
+        document.getElementById('editCatGranel').checked = p.venta_granel;
+        
+        // Copiar las categorías del selector de Firebase al nuevo selector
+        const selectCatOriginal = document.getElementById('selectorCategoriasFirebase');
+        const selectCatEdit = document.getElementById('editCatCategoria');
+        selectCatEdit.innerHTML = selectCatOriginal.innerHTML;
+        if(p.categoria_id) selectCatEdit.value = p.categoria_id;
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarCatalogo')).show();
+    }
+
+    async function guardarEdicionCatalogo(event, form) {
+        event.preventDefault();
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+        
+        const formData = new FormData(form);
+        formData.append('ajax', 'true');
+        
+        try {
+            const res = await fetch(form.action, { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                mostrarToast(data.message, 'success');
+                // Actualizar nuestro Array local para no tener que recargar la página
+                const pLocal = productosBase.find(x => x.id === form.producto_id.value);
+                if(pLocal) {
+                    pLocal.nombre = data.datos.nombre;
+                    pLocal.codigo_barras = data.datos.codigo_barras;
+                    pLocal.precio_actual = data.datos.precio;
+                    pLocal.precio_mayor = data.datos.volumen_precio;
+                    pLocal.venta_granel = data.datos.venta_granel;
+                    if(data.datos.categoria_id) pLocal.categoria_id = data.datos.categoria_id;
+                }
+                filtrarCatalogo(); // Redibujar la tabla
+                bootstrap.Modal.getInstance(document.getElementById('modalEditarCatalogo')).hide();
+            } else { mostrarToast(data.message, 'danger'); }
+        } catch(e) { mostrarToast('Error de conexión', 'danger'); } 
+        finally { btn.disabled = false; btn.innerHTML = originalText; }
+    }
+
+    function eliminarDesdeCatalogo(id, nombre) {
+        // Aprovecha la función que ya construiste antes
+        document.querySelector('.hidden-prod-id').value = id;
+        document.getElementById('inputEditNombre').value = nombre;
+        confirmarEliminacion(); 
+        
+        // Redibuja el catálogo tras borrar
+        setTimeout(() => {
+            document.getElementById('buscadorCatalogo').value = '';
+            filtrarCatalogo();
+        }, 1500); 
     }
 
     function calcularTicketsFinancieros() {
