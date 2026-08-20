@@ -339,15 +339,20 @@
                                             <input type="text" name="volumen_nombre" id="inputConfigNombreVolumen" class="form-control" placeholder="Ej: POR DOCENA">
                                         </div>
                                         <div class="row g-2">
-                                            <div class="col-6">
-                                                <label class="form-label text-brand-blue small fw-bold">Cant. Mínima</label>
-                                                <input type="number" step="any" name="cantidad_minima" id="inputCantidadMinima" class="form-control text-white" style="border-color: var(--accent-blue);" placeholder="Ej: 6">
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label text-brand-blue small fw-bold">Precio (Unid)</label>
-                                                <input type="number" step="0.01" name="precio_volumen_oferta" id="inputPrecioVolumenOferta" class="form-control text-brand-blue fw-bold" style="border-color: var(--accent-blue);" placeholder="S/ 0.00">
-                                            </div>
-                                        </div>
+    <div class="col-4">
+        <label class="form-label text-brand-blue small fw-bold">Cant. Mínima</label>
+        <input type="number" step="any" name="cantidad_minima" id="inputCantidadMinima" class="form-control text-white" style="border-color: var(--accent-blue);" placeholder="Ej: 6" oninput="calcularPreciosVolumen(1, 'cantidad')">
+    </div>
+    <div class="col-4">
+        <label class="form-label text-brand-blue small fw-bold">Precio (Unid)</label>
+        <input type="number" step="0.01" name="precio_volumen_oferta" id="inputPrecioVolumenOferta" class="form-control text-brand-blue fw-bold" style="border-color: var(--accent-blue);" placeholder="S/ 0.00" oninput="calcularPreciosVolumen(1, 'unidad')">
+    </div>
+    <div class="col-4">
+        <label class="form-label text-brand-blue small fw-bold">Total (S/)</label>
+        <!-- Este input no tiene atributo "name" porque no necesitamos mandarlo al backend, es visual/calculador -->
+        <input type="number" step="0.01" id="inputPrecioTotalVolumen1" class="form-control text-white fw-bold" style="border-color: var(--accent-blue); background-color: rgba(0, 213, 255, 0.05);" placeholder="S/ 0.00" oninput="calcularPreciosVolumen(1, 'total')">
+    </div>
+</div>
                                     </div>
 
                                     <div id="bloqueNivel2" class="mb-3 p-3 rounded" style="display: none; background-color: rgba(255, 102, 0, 0.05); border: 1px solid var(--accent-orange);">
@@ -360,15 +365,19 @@
                                             <input type="text" name="volumen_nombre_2" id="inputConfigNombreVolumen2" class="form-control" placeholder="Ej: POR CAJA">
                                         </div>
                                         <div class="row g-2">
-                                            <div class="col-6">
-                                                <label class="form-label text-brand-orange small fw-bold">Cant. Mínima</label>
-                                                <input type="number" step="any" name="cantidad_minima_2" id="inputCantidadMinima2" class="form-control text-white" style="border-color: var(--accent-orange);" placeholder="Ej: 12">
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label text-brand-orange small fw-bold">Precio (Unid)</label>
-                                                <input type="number" step="0.01" name="precio_volumen_oferta_2" id="inputPrecioVolumenOferta2" class="form-control text-brand-orange fw-bold" style="border-color: var(--accent-orange);" placeholder="S/ 0.00">
-                                            </div>
-                                        </div>
+    <div class="col-4">
+        <label class="form-label text-brand-orange small fw-bold">Cant. Mínima</label>
+        <input type="number" step="any" name="cantidad_minima_2" id="inputCantidadMinima2" class="form-control text-white" style="border-color: var(--accent-orange);" placeholder="Ej: 12" oninput="calcularPreciosVolumen(2, 'cantidad')">
+    </div>
+    <div class="col-4">
+        <label class="form-label text-brand-orange small fw-bold">Precio (Unid)</label>
+        <input type="number" step="0.01" name="precio_volumen_oferta_2" id="inputPrecioVolumenOferta2" class="form-control text-brand-orange fw-bold" style="border-color: var(--accent-orange);" placeholder="S/ 0.00" oninput="calcularPreciosVolumen(2, 'unidad')">
+    </div>
+    <div class="col-4">
+        <label class="form-label text-brand-orange small fw-bold">Total (S/)</label>
+        <input type="number" step="0.01" id="inputPrecioTotalVolumen2" class="form-control text-white fw-bold" style="border-color: var(--accent-orange); background-color: rgba(255, 102, 0, 0.05);" placeholder="S/ 0.00" oninput="calcularPreciosVolumen(2, 'total')">
+    </div>
+</div>
                                     </div>
 
                                     <div id="bloqueNivel3" class="mb-3 p-3 rounded" style="display: none; background-color: rgba(52, 211, 153, 0.05); border: 1px solid var(--green-success);">
@@ -381,15 +390,19 @@
                                             <input type="text" name="volumen_nombre_3" id="inputConfigNombreVolumen3" class="form-control" placeholder="Ej: POR MAYORISTA">
                                         </div>
                                         <div class="row g-2">
-                                            <div class="col-6">
-                                                <label class="form-label text-brand-green small fw-bold">Cant. Mínima</label>
-                                                <input type="number" step="any" name="cantidad_minima_3" id="inputCantidadMinima3" class="form-control text-white" style="border-color: var(--green-success);" placeholder="Ej: 50">
-                                            </div>
-                                            <div class="col-6">
-                                                <label class="form-label text-brand-green small fw-bold">Precio (Unid)</label>
-                                                <input type="number" step="0.01" name="precio_volumen_oferta_3" id="inputPrecioVolumenOferta3" class="form-control text-brand-green fw-bold" style="border-color: var(--green-success);" placeholder="S/ 0.00">
-                                            </div>
-                                        </div>
+    <div class="col-4">
+        <label class="form-label text-brand-green small fw-bold">Cant. Mínima</label>
+        <input type="number" step="any" name="cantidad_minima_3" id="inputCantidadMinima3" class="form-control text-white" style="border-color: var(--green-success);" placeholder="Ej: 50" oninput="calcularPreciosVolumen(3, 'cantidad')">
+    </div>
+    <div class="col-4">
+        <label class="form-label text-brand-green small fw-bold">Precio (Unid)</label>
+        <input type="number" step="0.01" name="precio_volumen_oferta_3" id="inputPrecioVolumenOferta3" class="form-control text-brand-green fw-bold" style="border-color: var(--green-success);" placeholder="S/ 0.00" oninput="calcularPreciosVolumen(3, 'unidad')">
+    </div>
+    <div class="col-4">
+        <label class="form-label text-brand-green small fw-bold">Total (S/)</label>
+        <input type="number" step="0.01" id="inputPrecioTotalVolumen3" class="form-control text-white fw-bold" style="border-color: var(--green-success); background-color: rgba(52, 211, 153, 0.05);" placeholder="S/ 0.00" oninput="calcularPreciosVolumen(3, 'total')">
+    </div>
+</div>
                                     </div>
 
                                     <button type="button" id="btnAgregarNivel" class="btn btn-outline-info w-100 mb-4" onclick="agregarNivel()">
@@ -725,6 +738,7 @@
             document.getElementById('inputConfigNombreVolumen3').value = '';
             document.getElementById('inputCantidadMinima3').value = '';
             document.getElementById('inputPrecioVolumenOferta3').value = '';
+            document.getElementById('inputPrecioTotalVolumen3').value = ''; // <--- NUEVO
             document.getElementById('btnAgregarNivel').style.display = 'block';
             nivelesActivos = 2;
         } else if (nivel === 2) {
@@ -736,6 +750,7 @@
             document.getElementById('inputConfigNombreVolumen2').value = '';
             document.getElementById('inputCantidadMinima2').value = '';
             document.getElementById('inputPrecioVolumenOferta2').value = '';
+            document.getElementById('inputPrecioTotalVolumen2').value = ''; // <--- NUEVO
             nivelesActivos = 1;
         }
     }
@@ -1226,6 +1241,13 @@
         document.getElementById('inputCantidadMinima3').value = parseSeguro(prod.volumen_cantidad_3) || '';
         document.getElementById('inputPrecioVolumenOferta3').value = parseSeguro(prod.volumen_precio_3) || '';
 
+        // >>> ¡AGREGA ESTO AQUÍ! <<<
+        // Forzamos el cálculo para que las casillas de "Total" se llenen automáticamente
+        calcularPreciosVolumen(1, 'unidad');
+        calcularPreciosVolumen(2, 'unidad');
+        calcularPreciosVolumen(3, 'unidad');
+        // >>> FIN DE LO QUE DEBES AGREGAR <<<
+
         // 6. Lógica visual para mostrar 1, 2 o 3 niveles
         nivelesActivos = 1;
         document.getElementById('bloqueNivel2').style.display = 'none';
@@ -1317,6 +1339,37 @@
             document.getElementById('listaResultados').style.display = 'none';
         }
     });
+
+    // =========================================================
+    // CALCULADORA INTELIGENTE PRECIO VOLUMEN (UNIDAD VS TOTAL)
+    // =========================================================
+    function calcularPreciosVolumen(nivel, origen = 'unidad') {
+        const inputCant = document.getElementById(nivel === 1 ? 'inputCantidadMinima' : `inputCantidadMinima${nivel}`);
+        const inputUnid = document.getElementById(nivel === 1 ? 'inputPrecioVolumenOferta' : `inputPrecioVolumenOferta${nivel}`);
+        const inputTotal = document.getElementById(`inputPrecioTotalVolumen${nivel}`);
+        
+        // Convertimos los valores a números (0 si están vacíos)
+        let cant = parseFloat(inputCant.value) || 0;
+        let unid = parseFloat(inputUnid.value) || 0;
+        let total = parseFloat(inputTotal.value) || 0;
+
+        if (cant > 0) {
+            if (origen === 'total') {
+                // Si el usuario edita el TOTAL, calculamos el precio Unitario
+                inputUnid.value = (total / cant).toFixed(2);
+            } else if (origen === 'unidad' || origen === 'cantidad') {
+                // Si el usuario edita el UNITARIO o la CANTIDAD, calculamos el Total
+                inputTotal.value = (unid * cant).toFixed(2);
+            }
+        } else {
+            // Limpiamos el total si borran la cantidad
+            inputTotal.value = '';
+        }
+    }
+
+    // =========================================================
+    // LÓGICA AJAX MAESTRA
+    // =========================================================
 
     // =========================================================
     // LÓGICA AJAX MAESTRA
