@@ -225,6 +225,9 @@ def gestionar_compras(request):
                 codigo_barras = request.POST.get('nuevo_codigo_barras', '').strip()
                 es_granel = request.POST.get('nuevo_es_granel') == 'on'
                 
+                # 🔴 NUEVO: Capturar el ID de la categoría seleccionada en Firebase
+                categoria_id = request.POST.get('nueva_categoria_id') 
+                
                 precio_menor = to_float(request.POST.get('nuevo_precio_menor'))
                 precio_mayor = to_float(request.POST.get('nuevo_precio_mayor'))
                 
@@ -233,7 +236,8 @@ def gestionar_compras(request):
                     'codigo_barras': codigo_barras,
                     'venta_granel': es_granel,
                     'precio': precio_menor,             
-                    'volumen_precio': precio_mayor,     
+                    'volumen_precio': precio_mayor,
+                    'categoria_id': categoria_id,  # 🔴 NUEVO: Guardarlo en la BD de Firebase
                     'ventas_mes': 0,           
                     'stock_infinito': True,    
                     'fecha_creacion': firestore.SERVER_TIMESTAMP
