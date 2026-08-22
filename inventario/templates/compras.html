@@ -999,7 +999,7 @@
         document.getElementById('editCatPMayor').value = parseSeguro(p.precio_mayor).toFixed(2);
         document.getElementById('editCatGranel').checked = p.venta_granel;
         
-        // >>> NUEVO: Lógica para mostrar niveles solo lectura <<<
+        // >>> NUEVO: Lógica para mostrar niveles solo lectura con Total <<<
         const contenedorNiveles = document.getElementById('contenedorNivelesLectura');
         let htmlNiveles = '';
 
@@ -1007,12 +1007,18 @@
         const cant1 = parseSeguro(p.volumen_cantidad);
         if (cant1 > 0) {
             const nom1 = p.volumen_nombre || 'Nivel 1';
-            const pre1 = parseSeguro(p.volumen_precio_oferta).toFixed(2);
+            const pre1_val = parseSeguro(p.volumen_precio_oferta);
+            const pre1 = pre1_val.toFixed(2);
+            const total1 = (cant1 * pre1_val).toFixed(2); // Multiplicación para el Total
+            
             htmlNiveles += `
                 <div class="p-2 rounded d-flex align-items-center" style="background-color: rgba(0, 213, 255, 0.05); border: 1px solid var(--accent-blue);">
                     <span class="badge bg-primary me-2">${nom1}</span> 
                     <span class="text-white small me-auto">Desde <b>${cant1}</b> unid.</span>
-                    <span class="text-brand-blue fw-bold">S/ ${pre1}</span>
+                    <div class="text-end">
+                        <div class="text-brand-blue fw-bold" style="line-height: 1.2;">S/ ${total1}</div>
+                        <small class="text-muted" style="font-size: 0.65rem;">S/ ${pre1} c/u</small>
+                    </div>
                 </div>`;
         }
 
@@ -1020,12 +1026,18 @@
         const cant2 = parseSeguro(p.volumen_cantidad_2);
         if (cant2 > 0) {
             const nom2 = p.volumen_nombre_2 || 'Nivel 2';
-            const pre2 = parseSeguro(p.volumen_precio_2).toFixed(2);
+            const pre2_val = parseSeguro(p.volumen_precio_2);
+            const pre2 = pre2_val.toFixed(2);
+            const total2 = (cant2 * pre2_val).toFixed(2);
+            
             htmlNiveles += `
                 <div class="p-2 rounded d-flex align-items-center" style="background-color: rgba(255, 102, 0, 0.05); border: 1px solid var(--accent-orange);">
                     <span class="badge bg-warning text-dark me-2">${nom2}</span> 
                     <span class="text-white small me-auto">Desde <b>${cant2}</b> unid.</span>
-                    <span class="text-brand-orange fw-bold">S/ ${pre2}</span>
+                    <div class="text-end">
+                        <div class="text-brand-orange fw-bold" style="line-height: 1.2;">S/ ${total2}</div>
+                        <small class="text-muted" style="font-size: 0.65rem;">S/ ${pre2} c/u</small>
+                    </div>
                 </div>`;
         }
 
@@ -1033,12 +1045,18 @@
         const cant3 = parseSeguro(p.volumen_cantidad_3);
         if (cant3 > 0) {
             const nom3 = p.volumen_nombre_3 || 'Nivel 3';
-            const pre3 = parseSeguro(p.volumen_precio_3).toFixed(2);
+            const pre3_val = parseSeguro(p.volumen_precio_3);
+            const pre3 = pre3_val.toFixed(2);
+            const total3 = (cant3 * pre3_val).toFixed(2);
+            
             htmlNiveles += `
                 <div class="p-2 rounded d-flex align-items-center" style="background-color: rgba(52, 211, 153, 0.05); border: 1px solid var(--green-success);">
                     <span class="badge bg-success me-2">${nom3}</span> 
                     <span class="text-white small me-auto">Desde <b>${cant3}</b> unid.</span>
-                    <span class="text-brand-green fw-bold">S/ ${pre3}</span>
+                    <div class="text-end">
+                        <div class="text-brand-green fw-bold" style="line-height: 1.2;">S/ ${total3}</div>
+                        <small class="text-muted" style="font-size: 0.65rem;">S/ ${pre3} c/u</small>
+                    </div>
                 </div>`;
         }
 
@@ -1048,6 +1066,7 @@
         }
 
         contenedorNiveles.innerHTML = htmlNiveles;
+        // >>> FIN LOGICA DE NIVELES <<<
         // >>> FIN LOGICA DE NIVELES <<<
 
         // Copiar las categorías del selector de Firebase al nuevo selector
