@@ -575,9 +575,27 @@
             </div>
 
             <div class="card p-3 mb-4" style="background-color: var(--bg-card); border: 1px solid var(--border-color);">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-search text-brand-orange me-3 fs-4"></i>
-                    <input type="text" id="buscadorCatalogo" class="form-control bg-transparent border-0 text-white shadow-none fs-5" placeholder="Buscar por nombre o código de barras..." oninput="filtrarCatalogo()">
+                <div class="row g-2 align-items-center">
+                    <!-- Buscador Original -->
+                    <div class="col-md-6 d-flex align-items-center">
+                        <i class="bi bi-search text-brand-orange me-3 fs-4"></i>
+                        <input type="text" id="buscadorCatalogo" class="form-control bg-transparent border-0 text-white shadow-none fs-5" placeholder="Buscar por nombre o código de barras..." oninput="filtrarCatalogo()">
+                    </div>
+                    <!-- NUEVO: Filtro Unidad/Granel -->
+                    <div class="col-md-3">
+                        <select id="filtroModo" class="form-select text-white border-secondary shadow-none" style="background-color: var(--bg-main);" onchange="filtrarCatalogo()">
+                            <option value="todos">📦 Todos (Granel/Unidad)</option>
+                            <option value="unidad">1️⃣ Solo Unidad</option>
+                            <option value="granel">⚖️ Solo Granel</option>
+                        </select>
+                    </div>
+                    <!-- NUEVO: Filtro Mayorista -->
+                    <div class="col-md-3">
+                        <select id="filtroMayor" class="form-select text-white border-secondary shadow-none" style="background-color: var(--bg-main);" onchange="filtrarCatalogo()">
+                            <option value="todos">🏷️ Todos los precios</option>
+                            <option value="con_mayor">⭐ Con Precio x Mayor</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -927,11 +945,36 @@
     }
 
     function filtrarCatalogo() {
+        // 1. Leer los valores del buscador y de los nuevos selects
         const query = document.getElementById('buscadorCatalogo').value.toLowerCase().trim();
-        const filtrados = productosBase.filter(p => 
-            p.nombre.toLowerCase().includes(query) || 
-            (p.codigo_barras && p.codigo_barras.toLowerCase().includes(query))
-        );
+        const filtroModo = document.getElementById('filtroModo').value;
+        const filtroMayor = document.getElementById('filtroMayor').value;
+
+        // 2. Filtrar el arreglo original (productosBase)
+        const filtrados = productosBase.filter(p => {
+            // A. Regla del buscador de texto
+            const cumpleBusqueda = p.nombre.toLowerCase().includes(query) || 
+                                   (p.codigo_barras && p.codigo_barras.toLowerCase().includes(query));
+
+            // B. Regla de Unidad / Granel
+            let cumpleModo = true;
+            if (filtroModo === 'unidad') {
+                cumpleModo = (p.venta_granel === false || p.venta_granel == null);
+            } else if (filtroModo === 'granel') {
+                cumpleModo = (p.venta_granel === true);
+            }
+
+            // C. Regla de Precio por Mayor (asumiendo que parseSeguro ya existe en tu código)
+            let cumpleMayor = true;
+            if (filtroMayor === 'con_mayor') {
+                cumpleMayor = (parseSeguro(p.precio_mayor) > 0);
+            }
+
+            // El producto solo se mostrará si pasa las 3 pruebas
+            return cumpleBusqueda && cumpleModo && cumpleMayor;
+        });
+
+        // 3. Redibujar la tabla con los resultados
         renderizarCatalogo(filtrados);
     }
 
