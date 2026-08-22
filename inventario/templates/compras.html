@@ -626,6 +626,7 @@
     </div>
 </div>
 
+<!-- ================= MODAL CREAR NUEVO ================= -->
 <div class="modal fade" id="modalNuevoProducto" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--accent-orange); box-shadow: 0 0 20px rgba(255, 102, 0, 0.2);">
@@ -676,9 +677,8 @@
                                 <input type="number" step="any" name="nuevo_precio_mayor" id="inputNuevoPrecioMayor" class="form-control form-control-sm text-white fw-bold" placeholder="0.00">
                             </div>
                         </div>
+                    </div>
                     
-
-                    <!-- switch de VENTA A GRANEL -->
                     <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
                         <div class="d-flex justify-content-between align-items-center">
                             <label class="form-check-label text-white small fw-bold" id="lblModalTipoVenta"><i class="bi bi-123 me-1"></i> Venta por UNIDAD</label>
@@ -697,7 +697,7 @@
     </div>
 </div>
 
-
+<!-- ================= MODAL EDITAR EN CATÁLOGO ================= -->
 <div class="modal fade" id="modalEditarCatalogo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--accent-blue);">
@@ -734,15 +734,14 @@
                             <input type="number" step="any" name="editar_precio_mayor" id="editCatPMayor" class="form-control text-white fw-bold" style="border-color: var(--green-success);">
                         </div>
                     </div>
-
-                    <!-- >>> AQUÍ EMPA EL BLOQUE NUEVO <<< -->
+                    
+                    <!-- BLOQUE DE LECTURA DE NIVELES -->
                     <div class="mb-3">
                         <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-info-circle-fill me-1"></i> Reglas de Precios por Volumen</label>
                         <div id="contenedorNivelesLectura" class="d-flex flex-column gap-2">
-                            <!-- Los niveles aparecerán aquí inyectados por JavaScript -->
+                            <!-- Inyectado por JS -->
                         </div>
                     </div>
-                    <!-- >>> AQUÍ TERMINA EL BLOQUE NUEVO <<< -->
 
                     <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
                         <div class="d-flex justify-content-between align-items-center">
