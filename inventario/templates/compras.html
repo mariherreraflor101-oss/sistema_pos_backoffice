@@ -676,16 +676,7 @@
                                 <input type="number" step="any" name="nuevo_precio_mayor" id="inputNuevoPrecioMayor" class="form-control form-control-sm text-white fw-bold" placeholder="0.00">
                             </div>
                         </div>
-                    <!-- ... inputs de P. Público y P. Mayor ... -->
-                    </div>
                     
-                    <!-- NUEVO: Bloque informativo de precios por volumen -->
-                    <div class="mb-3">
-                        <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-info-circle-fill me-1"></i> Reglas de Precios por Volumen</label>
-                        <div id="contenedorNivelesLectura" class="d-flex flex-column gap-2">
-                            <!-- Los niveles aparecerán aquí inyectados por JavaScript -->
-                        </div>
-                    </div>
 
                     <!-- switch de VENTA A GRANEL -->
                     <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
@@ -743,6 +734,16 @@
                             <input type="number" step="any" name="editar_precio_mayor" id="editCatPMayor" class="form-control text-white fw-bold" style="border-color: var(--green-success);">
                         </div>
                     </div>
+
+                    <!-- >>> AQUÍ EMPIEZA EL BLOQUE NUEVO <<< -->
+                    <div class="mb-3">
+                        <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-info-circle-fill me-1"></i> Reglas de Precios por Volumen</label>
+                        <div id="contenedorNivelesLectura" class="d-flex flex-column gap-2">
+                            <!-- Los niveles aparecerán aquí inyectados por JavaScript -->
+                        </div>
+                    </div>
+                    <!-- >>> AQUÍ TERMINA EL BLOQUE NUEVO <<< -->
+
                     <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
                         <div class="d-flex justify-content-between align-items-center">
                             <label class="form-check-label text-white small fw-bold" id="lblEditCatGranel"><i class="bi bi-speedometer2 me-1 text-brand-orange"></i> Venta a GRANEL</label>
