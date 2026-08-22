@@ -522,7 +522,7 @@ def gestionar_compras(request):
 
 def api_historial_compras(request):
     """ API 1: Envía el historial de compras a la App Flutter """
-    compras_ref = db.collection('compras_inventario').order_by('fecha', direction=firestore.Query.DESCENDING).limit(500).stream()
+    compras_ref = db.collection('compras_inventario').order_by('fecha', direction=firestore.Query.DESCENDING).limit(3000).stream()
     lista = []
     
     for doc in compras_ref:
