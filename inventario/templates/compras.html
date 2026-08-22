@@ -676,8 +676,18 @@
                                 <input type="number" step="any" name="nuevo_precio_mayor" id="inputNuevoPrecioMayor" class="form-control form-control-sm text-white fw-bold" placeholder="0.00">
                             </div>
                         </div>
+                    <!-- ... inputs de P. Público y P. Mayor ... -->
                     </div>
                     
+                    <!-- NUEVO: Bloque informativo de precios por volumen -->
+                    <div class="mb-3">
+                        <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-info-circle-fill me-1"></i> Reglas de Precios por Volumen</label>
+                        <div id="contenedorNivelesLectura" class="d-flex flex-column gap-2">
+                            <!-- Los niveles aparecerán aquí inyectados por JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- switch de VENTA A GRANEL -->
                     <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
                         <div class="d-flex justify-content-between align-items-center">
                             <label class="form-check-label text-white small fw-bold" id="lblModalTipoVenta"><i class="bi bi-123 me-1"></i> Venta por UNIDAD</label>
@@ -989,6 +999,57 @@
         document.getElementById('editCatPMayor').value = parseSeguro(p.precio_mayor).toFixed(2);
         document.getElementById('editCatGranel').checked = p.venta_granel;
         
+        // >>> NUEVO: Lógica para mostrar niveles solo lectura <<<
+        const contenedorNiveles = document.getElementById('contenedorNivelesLectura');
+        let htmlNiveles = '';
+
+        // Nivel 1 (Azul)
+        const cant1 = parseSeguro(p.volumen_cantidad);
+        if (cant1 > 0) {
+            const nom1 = p.volumen_nombre || 'Nivel 1';
+            const pre1 = parseSeguro(p.volumen_precio_oferta).toFixed(2);
+            htmlNiveles += `
+                <div class="p-2 rounded d-flex align-items-center" style="background-color: rgba(0, 213, 255, 0.05); border: 1px solid var(--accent-blue);">
+                    <span class="badge bg-primary me-2">${nom1}</span> 
+                    <span class="text-white small me-auto">Desde <b>${cant1}</b> unid.</span>
+                    <span class="text-brand-blue fw-bold">S/ ${pre1}</span>
+                </div>`;
+        }
+
+        // Nivel 2 (Naranja)
+        const cant2 = parseSeguro(p.volumen_cantidad_2);
+        if (cant2 > 0) {
+            const nom2 = p.volumen_nombre_2 || 'Nivel 2';
+            const pre2 = parseSeguro(p.volumen_precio_2).toFixed(2);
+            htmlNiveles += `
+                <div class="p-2 rounded d-flex align-items-center" style="background-color: rgba(255, 102, 0, 0.05); border: 1px solid var(--accent-orange);">
+                    <span class="badge bg-warning text-dark me-2">${nom2}</span> 
+                    <span class="text-white small me-auto">Desde <b>${cant2}</b> unid.</span>
+                    <span class="text-brand-orange fw-bold">S/ ${pre2}</span>
+                </div>`;
+        }
+
+        // Nivel 3 (Verde)
+        const cant3 = parseSeguro(p.volumen_cantidad_3);
+        if (cant3 > 0) {
+            const nom3 = p.volumen_nombre_3 || 'Nivel 3';
+            const pre3 = parseSeguro(p.volumen_precio_3).toFixed(2);
+            htmlNiveles += `
+                <div class="p-2 rounded d-flex align-items-center" style="background-color: rgba(52, 211, 153, 0.05); border: 1px solid var(--green-success);">
+                    <span class="badge bg-success me-2">${nom3}</span> 
+                    <span class="text-white small me-auto">Desde <b>${cant3}</b> unid.</span>
+                    <span class="text-brand-green fw-bold">S/ ${pre3}</span>
+                </div>`;
+        }
+
+        // Si no tiene ningún nivel configurado
+        if (htmlNiveles === '') {
+            htmlNiveles = '<div class="text-muted small fst-italic py-1">No hay reglas por volumen para este producto.</div>';
+        }
+
+        contenedorNiveles.innerHTML = htmlNiveles;
+        // >>> FIN LOGICA DE NIVELES <<<
+
         // Copiar las categorías del selector de Firebase al nuevo selector
         const selectCatOriginal = document.getElementById('selectorCategoriasFirebase');
         const selectCatEdit = document.getElementById('editCatCategoria');
