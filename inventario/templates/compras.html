@@ -634,7 +634,7 @@
                 <h5 class="modal-title fw-bold text-brand-orange"><i class="bi bi-box-seam-fill me-2"></i>Crear Nuevo Producto</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="formNuevoProducto" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="submitFormAjax(event, this)">
+            <form id="formNuevoProducto" method="POST" action="{% url 'gestionar_compras' %}" enctype="multipart/form-data" onsubmit="submitFormAjax(event, this)">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="crear_producto">
                 <div class="modal-body pt-0">
@@ -642,15 +642,30 @@
                         <label class="form-label text-white small fw-bold">Nombre del Producto</label>
                         <input type="text" name="nuevo_nombre" class="form-control" placeholder="Ej: GALLETAS OREO 36G" required autocomplete="off">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white small fw-bold">Categoría del Producto</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-transparent"><i class="bi bi-tags-fill text-white"></i></span>
-                            <select name="nueva_categoria_id" id="selectorCategoriasFirebase" class="form-select" required>
-                                <option value="" disabled selected>Cargando desde Firebase...</option>
-                            </select>
+                    
+                    <!-- NUEVO: CATEGORÍA Y SUBCATEGORÍA -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-white small fw-bold">Categoría</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent"><i class="bi bi-tags-fill text-white"></i></span>
+                                <!-- Agregamos onchange para que filtre las subcategorías automáticamente -->
+                                <select name="nueva_categoria_id" id="selectorCategorias" class="form-select" required onchange="cargarSubcategorias()">
+                                    <option value="" disabled selected>Cargando...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-white small fw-bold">Subcategoría</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent"><i class="bi bi-bookmark-fill text-white"></i></span>
+                                <select name="nueva_subcategoria_id" id="selectorSubcategorias" class="form-select">
+                                    <option value="" disabled selected>Elige categoría...</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
+
                     <div class="mb-4">
                         <label class="form-label text-white small fw-bold">Código de Barras de la Unidad</label>
                         <div class="input-group">
@@ -658,6 +673,13 @@
                             <input type="text" name="nuevo_codigo_barras" id="inputNuevoCodigoModal" class="form-control" placeholder="Escanea o genera" autocomplete="off">
                             <button type="button" class="btn btn-brand-blue" onclick="generarCodigo(this)">Generar</button>
                         </div>
+                    </div>
+
+                    <!-- NUEVO: SUBIDA DE IMAGEN PARA LA APP -->
+                    <div class="mb-4 p-3 rounded" style="background-color: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2);">
+                        <label class="form-label text-white small fw-bold"><i class="bi bi-image me-1"></i> Imagen para la App (Opcional)</label>
+                        <input type="file" name="nueva_imagen" class="form-control bg-dark text-white border-secondary" accept="image/png, image/jpeg, image/webp">
+                        <small class="text-muted" style="font-size: 0.7rem;">El sistema la comprimirá y recortará automáticamente a 600x600.</small>
                     </div>
 
                     <div class="mb-3 p-3 rounded" style="background-color: rgba(0, 213, 255, 0.05); border: 1px dashed rgba(0, 213, 255, 0.3);">
