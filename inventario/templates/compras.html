@@ -1150,6 +1150,9 @@
                     pLocal.precio_mayor = data.datos.volumen_precio;
                     pLocal.venta_granel = data.datos.venta_granel;
                     if(data.datos.categoria_id) pLocal.categoria_id = data.datos.categoria_id;
+                    
+                    // 🚀 AQUÍ ESTÁ LA LÍNEA QUE FALTABA
+                    if(data.datos.subcategoria_id) pLocal.subcategoria_id = data.datos.subcategoria_id; 
                 }
                 filtrarCatalogo(); // Redibujar la tabla
                 bootstrap.Modal.getInstance(document.getElementById('modalEditarCatalogo')).hide();
@@ -2203,7 +2206,7 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
 
             // Si ya tenía subcategoría, la selecciona
             if(subcatGuardada) {
-                selectorSub.value = subcatGuardada;
+                selectorSub.value = String(subcatGuardada);
             }
         } catch (error) {
             console.error("Error cargando subcategorías en edición:", error);
