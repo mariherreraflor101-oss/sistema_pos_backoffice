@@ -2113,40 +2113,57 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
             document.getElementById('inputPrecioPaquete').value = (precioMayor * factor).toFixed(2);
         }
     }
-</script>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAxukeSa1El1XE9rU93CA2QW2MVrK5melg",
-      authDomain: "sistema-pos-930dd.firebaseapp.com",
-      projectId: "sistema-pos-930dd",
-      storageBucket: "sistema-pos-930dd.firebasestorage.app",
-      messagingSenderId: "986561008505",
-      appId: "1:986561008505:web:d802677eb1316c32c615a8"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    async function cargarCategoriasFirebase() {
-        const selector = document.getElementById('selectorCategoriasFirebase');
+    // =========================================================
+    // NUEVA LÓGICA: CARGAR CATEGORÍAS Y SUBCATEGORÍAS DESDE MYSQL
+    // =========================================================
+    async function cargarCategoriasOficiales() {
+        const formData = new FormData();
+        formData.append('action', 'obtener_categorias');
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('ajax', 'true');
+        
         try {
-            const querySnapshot = await getDocs(collection(db, "categorias"));
-            selector.innerHTML = '<option value="" disabled selected>Seleccione una categoría...</option>';
-            querySnapshot.forEach((doc) => {
-                const datos = doc.data();
-                const nombre = datos.nombre || datos.name || "Sin nombre"; 
-                selector.innerHTML += `<option value="${doc.id}" style="background-color: #161B29; color: white;">${nombre}</option>`;
+            const res = await fetch("{% url 'gestionar_compras' %}", { method: 'POST', body: formData });
+            const data = await res.json();
+            const selector = document.getElementById('selectorCategorias');
+            selector.innerHTML = '<option value="" disabled selected>Seleccione categoría...</option>';
+            
+            data.categorias.forEach(cat => {
+                selector.innerHTML += `<option value="${cat.id}" style="background-color: #161B29; color: white;">${cat.nombre}</option>`;
             });
         } catch (error) {
-            selector.innerHTML = '<option value="" disabled selected>Error cargando categorías</option>';
+            console.error("Error cargando categorías:", error);
         }
     }
-    cargarCategoriasFirebase();
-</script>    
+
+    async function cargarSubcategorias() {
+        const catId = document.getElementById('selectorCategorias').value;
+        const selectorSub = document.getElementById('selectorSubcategorias');
+        selectorSub.innerHTML = '<option value="" disabled selected>Cargando subcategorías...</option>';
+        
+        const formData = new FormData();
+        formData.append('action', 'obtener_subcategorias');
+        formData.append('categoria_id', catId);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('ajax', 'true');
+        
+        try {
+            const res = await fetch("{% url 'gestionar_compras' %}", { method: 'POST', body: formData });
+            const data = await res.json();
+            selectorSub.innerHTML = '<option value="" disabled selected>Seleccione subcategoría...</option>';
+            
+            data.subcategorias.forEach(sub => {
+                selectorSub.innerHTML += `<option value="${sub.id}" style="background-color: #161B29; color: white;">${sub.nombre}</option>`;
+            });
+        } catch (error) {
+            console.error("Error cargando subcategorías:", error);
+        }
+    }
+
+    // Ejecutar apenas cargue la página
+    document.addEventListener('DOMContentLoaded', cargarCategoriasOficiales);
+</script>
 </body>
 </html>
 }
