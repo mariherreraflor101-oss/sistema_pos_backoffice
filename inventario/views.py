@@ -358,21 +358,55 @@ def gestionar_compras(request):
         elif action == 'editar_producto_catalogo':
             try:
                 producto_id = request.POST.get('producto_id')
+                nombre = request.POST.get('editar_nombre', '').strip().upper()
+                codigo_barras = request.POST.get('editar_codigo_barras', '').strip()
+                es_granel = request.POST.get('editar_es_granel') == 'on'
+                categoria_id = request.POST.get('editar_categoria_id')
+                subcategoria_id = request.POST.get('editar_subcategoria_id') # 🔴 NUEVO
+                precio_menor = to_float(request.POST.get('editar_precio_menor'))
+                precio_mayor = to_float(request.POST.get('editar_precio_mayor'))
+
+                # ==========================================================
+                # 🚀 REGLA DE ORO: Enviar al Subdominio SOLO SI trae imagen
+                # ==========================================================
+                if 'editar_imagen' in request.FILES:
+                    img = request.FILES['editar_imagen']
+                    archivos = {'imagen': (img.name, img.read(), img.content_type)}
+                    
+                    datos_mysql = {
+                        'nombre': nombre,
+                        'precio_final': precio_menor,
+                        'categoria_id': categoria_id,
+                        'subcategoria_id': subcategoria_id,
+                    }
+                    try:
+                        # Lo enviamos al Subdominio para que lo procese (Update or Create)
+                        requests.post(f"{URL_MAESTRO}/api/interno/recibir_producto/", data=datos_mysql, files=archivos, timeout=5)
+                    except Exception as api_err:
+                        print("⚠️ Advertencia: Error conectando con el Subdominio:", api_err)
+
+                # ==========================================================
+                # 💾 SIEMPRE ACTUALIZAR EN FIREBASE (POS local)
+                # ==========================================================
                 if producto_id:
                     datos_actualizar = {
-                        'nombre': request.POST.get('editar_nombre', '').strip().upper(),
-                        'codigo_barras': request.POST.get('editar_codigo_barras', '').strip(),
-                        'venta_granel': request.POST.get('editar_es_granel') == 'on',
-                        'precio': to_float(request.POST.get('editar_precio_menor')),             
-                        'volumen_precio': to_float(request.POST.get('editar_precio_mayor')),
+                        'nombre': nombre,
+                        'codigo_barras': codigo_barras,
+                        'venta_granel': es_granel,
+                        'precio': precio_menor,             
+                        'volumen_precio': precio_mayor,
                     }
-                    if request.POST.get('editar_categoria_id'):
-                        datos_actualizar['categoria_id'] = request.POST.get('editar_categoria_id')
+                    if categoria_id:
+                        datos_actualizar['categoria_id'] = categoria_id
+                    if subcategoria_id:
+                        datos_actualizar['subcategoria_id'] = subcategoria_id
 
                     db.collection('productos').document(producto_id).update(datos_actualizar)
-                    if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Producto actualizado.', 'datos': datos_actualizar})
+                    
+                    if is_ajax: 
+                        return JsonResponse({'status': 'success', 'message': f'✅ Producto "{nombre}" actualizado.', 'datos': datos_actualizar})
             except Exception as e:
-                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})
+                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al editar: {str(e)}'})
 
         if not is_ajax: return redirect('gestionar_compras')
 
@@ -391,6 +425,7 @@ def gestionar_compras(request):
             'paquete_cantidad': data.get('paquete_cantidad', 1),
             'codigo_barras': data.get('codigo_barras', ''),
             'categoria_id': data.get('categoria_id', ''),
+            'subcategoria_id': data.get('subcategoria_id', ''),
             'volumen_nombre': data.get('volumen_nombre', ''),
             'volumen_cantidad': data.get('volumen_cantidad', ''),
             'volumen_precio_oferta': data.get('volumen_precio', ''),

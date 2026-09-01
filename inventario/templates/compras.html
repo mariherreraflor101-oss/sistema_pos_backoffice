@@ -727,7 +727,8 @@
                 <h5 class="modal-title fw-bold text-brand-blue"><i class="bi bi-pencil-square me-2"></i>Editar en Catálogo</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="formEditarCatalogo" method="POST" action="{% url 'gestionar_compras' %}" onsubmit="guardarEdicionCatalogo(event, this)">
+            <!-- IMPORTANTE: Añadimos enctype="multipart/form-data" para permitir fotos -->
+            <form id="formEditarCatalogo" method="POST" action="{% url 'gestionar_compras' %}" enctype="multipart/form-data" onsubmit="guardarEdicionCatalogo(event, this)">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="editar_producto_catalogo">
                 <input type="hidden" name="producto_id" id="editCatId">
@@ -736,16 +737,41 @@
                         <label class="form-label text-white small fw-bold">Nombre del Producto</label>
                         <input type="text" name="editar_nombre" id="editCatNombre" class="form-control text-white fw-bold" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white small fw-bold">Categoría</label>
-                        <select name="editar_categoria_id" id="editCatCategoria" class="form-select text-white">
-                            <option value="" disabled selected>Cargando...</option>
-                        </select>
+
+                    <!-- NUEVO: CATEGORÍA Y SUBCATEGORÍA EN EL MODAL DE EDICIÓN -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-white small fw-bold">Categoría</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent"><i class="bi bi-tags-fill text-white"></i></span>
+                                <select name="editar_categoria_id" id="editCatCategoria" class="form-select text-white" onchange="cargarSubcategoriasEdicion()">
+                                    <option value="" disabled selected>Cargando...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-white small fw-bold">Subcategoría</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent"><i class="bi bi-bookmark-fill text-white"></i></span>
+                                <select name="editar_subcategoria_id" id="editCatSubcategoria" class="form-select text-white">
+                                    <option value="" disabled selected>Elige categoría...</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="mb-4">
                         <label class="form-label text-white small fw-bold">Código de Barras</label>
                         <input type="text" name="editar_codigo_barras" id="editCatCodigo" class="form-control text-white">
                     </div>
+
+                    <!-- NUEVO: SUBIDA DE IMAGEN (EL FILTRO PARA LA APP) -->
+                    <div class="mb-4 p-3 rounded" style="background-color: rgba(0, 213, 255, 0.05); border: 1px dashed rgba(0, 213, 255, 0.3);">
+                        <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-image me-1"></i> Imagen para la App</label>
+                        <input type="file" name="editar_imagen" class="form-control bg-dark text-white border-info" accept="image/png, image/jpeg, image/webp">
+                        <small class="text-muted" style="font-size: 0.7rem;">⚠️ Si subes una foto, este producto se sincronizará automáticamente con tu App (Subdominio).</small>
+                    </div>
+
                     <div class="row mb-3">
                         <div class="col-6">
                             <label class="text-brand-orange small fw-bold">P. Público (S/)</label>
@@ -757,12 +783,9 @@
                         </div>
                     </div>
                     
-                    <!-- BLOQUE DE LECTURA DE NIVELES -->
                     <div class="mb-3">
                         <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-info-circle-fill me-1"></i> Reglas de Precios por Volumen</label>
-                        <div id="contenedorNivelesLectura" class="d-flex flex-column gap-2">
-                            <!-- Inyectado por JS -->
-                        </div>
+                        <div id="contenedorNivelesLectura" class="d-flex flex-column gap-2"></div>
                     </div>
 
                     <div class="mb-2 p-3 rounded" style="background-color: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2);">
@@ -776,7 +799,7 @@
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-brand-blue text-dark fw-bold rounded-3"><i class="bi bi-save me-2"></i>Guardar Cambios</button>
+                    <button type="submit" class="btn btn-brand-blue text-dark fw-bold rounded-3"><i class="bi bi-cloud-arrow-up-fill me-2"></i>Guardar y Sincronizar</button>
                 </div>
             </form>
         </div>
@@ -1091,11 +1114,14 @@
         // >>> FIN LOGICA DE NIVELES <<<
         // >>> FIN LOGICA DE NIVELES <<<
 
-        // Copiar las categorías del selector de Firebase al nuevo selector
-        const selectCatOriginal = document.getElementById('selectorCategoriasFirebase');
-        const selectCatEdit = document.getElementById('editCatCategoria');
-        selectCatEdit.innerHTML = selectCatOriginal.innerHTML;
-        if(p.categoria_id) selectCatEdit.value = p.categoria_id;
+        // Llenar el desplegable de categoría copiando el del modal de crear
+        document.getElementById('editCatCategoria').innerHTML = document.getElementById('selectorCategorias').innerHTML;
+        if(p.categoria_id) {
+            document.getElementById('editCatCategoria').value = p.categoria_id;
+        }
+        
+        // Cargar las subcategorías automáticamente si ya tenía una asignada
+        cargarSubcategoriasEdicion(p.subcategoria_id);
 
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarCatalogo')).show();
     }
@@ -2156,6 +2182,37 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
             data.subcategorias.forEach(sub => {
                 selectorSub.innerHTML += `<option value="${sub.id}" style="background-color: #161B29; color: white;">${sub.nombre}</option>`;
             });
+        } catch (error) {
+            console.error("Error cargando subcategorías:", error);
+        }
+    }
+
+    async function cargarSubcategoriasEdicion(subcatGuardada = null) {
+        const catId = document.getElementById('editCatCategoria').value;
+        const selectorSub = document.getElementById('editCatSubcategoria');
+        selectorSub.innerHTML = '<option value="" disabled selected>Cargando subcategorías...</option>';
+        
+        if (!catId) return;
+
+        const formData = new FormData();
+        formData.append('action', 'obtener_subcategorias');
+        formData.append('categoria_id', catId);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('ajax', 'true');
+        
+        try {
+            const res = await fetch("{% url 'gestionar_compras' %}", { method: 'POST', body: formData });
+            const data = await res.json();
+            selectorSub.innerHTML = '<option value="" disabled selected>Seleccione subcategoría...</option>';
+            
+            data.subcategorias.forEach(sub => {
+                selectorSub.innerHTML += `<option value="${sub.id}" style="background-color: #161B29; color: white;">${sub.nombre}</option>`;
+            });
+
+            // Si el producto ya tenía una subcategoría guardada, la seleccionamos
+            if(subcatGuardada) {
+                selectorSub.value = subcatGuardada;
+            }
         } catch (error) {
             console.error("Error cargando subcategorías:", error);
         }
