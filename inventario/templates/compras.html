@@ -2141,17 +2141,16 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
     }
 
     // =========================================================
-    // NUEVA LÓGICA: CARGAR CATEGORÍAS Y SUBCATEGORÍAS DESDE MYSQL
+    // NUEVA LÓGICA: CARGAR CATEGORÍAS DIRECTO DEL SUBDOMINIO
     // =========================================================
+    const URL_MAESTRO_JS = "https://api-santarosa.bodegaelpueblo.com";
+
     async function cargarCategoriasOficiales() {
-        const formData = new FormData();
-        formData.append('action', 'obtener_categorias');
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-        formData.append('ajax', 'true');
-        
         try {
-            const res = await fetch("{% url 'gestionar_compras' %}", { method: 'POST', body: formData });
+            // 🚀 Ahora va directo a tu Subdominio
+            const res = await fetch(`${URL_MAESTRO_JS}/api/interno/categorias/`);
             const data = await res.json();
+            
             const selector = document.getElementById('selectorCategorias');
             selector.innerHTML = '<option value="" disabled selected>Seleccione categoría...</option>';
             
@@ -2168,15 +2167,13 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         const selectorSub = document.getElementById('selectorSubcategorias');
         selectorSub.innerHTML = '<option value="" disabled selected>Cargando subcategorías...</option>';
         
-        const formData = new FormData();
-        formData.append('action', 'obtener_subcategorias');
-        formData.append('categoria_id', catId);
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-        formData.append('ajax', 'true');
-        
+        if (!catId) return;
+
         try {
-            const res = await fetch("{% url 'gestionar_compras' %}", { method: 'POST', body: formData });
+            // 🚀 Pide las subcategorías directo al Subdominio
+            const res = await fetch(`${URL_MAESTRO_JS}/api/interno/subcategorias/${catId}/`);
             const data = await res.json();
+            
             selectorSub.innerHTML = '<option value="" disabled selected>Seleccione subcategoría...</option>';
             
             data.subcategorias.forEach(sub => {
@@ -2194,27 +2191,22 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         
         if (!catId) return;
 
-        const formData = new FormData();
-        formData.append('action', 'obtener_subcategorias');
-        formData.append('categoria_id', catId);
-        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-        formData.append('ajax', 'true');
-        
         try {
-            const res = await fetch("{% url 'gestionar_compras' %}", { method: 'POST', body: formData });
+            const res = await fetch(`${URL_MAESTRO_JS}/api/interno/subcategorias/${catId}/`);
             const data = await res.json();
+            
             selectorSub.innerHTML = '<option value="" disabled selected>Seleccione subcategoría...</option>';
             
             data.subcategorias.forEach(sub => {
                 selectorSub.innerHTML += `<option value="${sub.id}" style="background-color: #161B29; color: white;">${sub.nombre}</option>`;
             });
 
-            // Si el producto ya tenía una subcategoría guardada, la seleccionamos
+            // Si ya tenía subcategoría, la selecciona
             if(subcatGuardada) {
                 selectorSub.value = subcatGuardada;
             }
         } catch (error) {
-            console.error("Error cargando subcategorías:", error);
+            console.error("Error cargando subcategorías en edición:", error);
         }
     }
 
