@@ -439,7 +439,7 @@ def gestionar_compras(request):
             'volumen_cantidad_3': data.get('volumen_cantidad_3', ''),
             'volumen_precio_3': data.get('volumen_precio_3', ''),
             'venta_granel': data.get('venta_granel', False),
-            'imagen': data.get('imagen_url', '') # 🚀 NUEVO: Traemos el estado de la foto desde Firebase
+            'imagen': data.get('tiene_imagen', False) # 🚀 ESTA ES LA LÍNEA QUE MANTIENE EL BRILLO
         })
     productos_json = json.dumps(lista_productos)
 
