@@ -610,6 +610,7 @@
                         <thead class="table-custom-header">
                             <tr>
                                 <th>Producto</th>
+                                <th class="text-center" title="¿Tiene Imagen?"><i class="bi bi-image"></i> Foto</th>
                                 <th>Código Barras</th>
                                 <th>P. Público</th>
                                 <th>P. Mayor</th>
@@ -986,9 +987,15 @@
                 ? '<span class="badge bg-warning text-dark"><i class="bi bi-speedometer2"></i> Granel</span>'
                 : '<span class="badge bg-secondary"><i class="bi bi-123"></i> Unidad</span>';
 
+            // 🚀 LÓGICA DE LA HUELLA VISUAL
+            const iconFoto = (p.imagen && p.imagen !== '') 
+                ? '<i class="bi bi-image-fill text-brand-green fs-5" title="¡Imagen guardada!"></i>' 
+                : '<i class="bi bi-image text-secondary opacity-25 fs-5" title="Sin foto"></i>';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="fw-bold text-white">${p.nombre}</td>
+                <td class="text-center">${iconFoto}</td>
                 <td class="text-muted"><i class="bi bi-upc me-1"></i> ${p.codigo_barras || 'Sin código'}</td>
                 <td><span class="badge-precio-venta">S/ ${pMenor}</span></td>
                 <td class="text-brand-green fw-bold">S/ ${pMayor}</td>
