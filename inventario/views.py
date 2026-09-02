@@ -143,7 +143,11 @@ def gestionar_compras(request):
                             'volumen_nombre': '',
                             'volumen_cantidad': '',
                             'volumen_precio_oferta': '',
-                            'venta_granel': es_granel 
+                            'venta_granel': es_granel,
+                            # 🚀 AÑADIMOS LOS CAMPOS FALTANTES PARA EL JAVASCRIPT
+                            'codigo_barras': codigo_barras,
+                            'categoria_id': categoria_id,
+                            'subcategoria_id': subcategoria_id
                         }
                     })
             except Exception as e:
