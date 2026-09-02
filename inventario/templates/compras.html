@@ -100,7 +100,17 @@
         window.location.href = "/login/"; 
     }
 
-    const productosBase = JSON.parse('{{ productos_json|escapejs }}');
+    // =========================================================
+    // 🚀 REPARACIÓN DE VARIABLES JSON (precio vs precio_actual)
+    // =========================================================
+    const productosBase = JSON.parse('{{ productos_json|escapejs }}').map(p => {
+        // Si el backend mandó 'precio' pero el frontend espera 'precio_actual', lo reparamos
+        if (p.precio !== undefined && p.precio_actual === undefined) {
+            p.precio_actual = p.precio;
+        }
+        return p;
+    });
+
     let loteCompras = [];
     let costoUnitarioActual = 0;
     let costoUnitarioModal = 0;
@@ -1869,6 +1879,22 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         
         // 🚀 3. INYECTAR EL ID DE LA EMPRESA AL CREAR PRODUCTOS O GUARDAR CONFIGURACIONES
         formData.append('empresa_id', localStorage.getItem('pos_empresa_id'));
+
+        // =========================================================
+        // 🚀 INYECCIÓN DE PRECIOS PARA FORMULARIOS DIVORCIADOS
+        // =========================================================
+        if (form.id === 'formConfiguracion') {
+            // Si guarda configuración, capturamos los precios que calculó en la otra columna
+            formData.append('precio_menor', document.getElementById('inputPrecioMenor').value || 0);
+            formData.append('precio_mayor', document.getElementById('inputPrecioMayor').value || 0);
+        }
+
+        if (form.id === 'formCalculadora') {
+            // Asegurar que viajen aunque el input esté en modo lectura o inactivo
+            formData.set('precio_menor', document.getElementById('inputPrecioMenor').value);
+            formData.set('precio_mayor', document.getElementById('inputPrecioMayor').value);
+        }
+        // =========================================================
 
         try {
             const response = await fetch(form.getAttribute('action'), { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
