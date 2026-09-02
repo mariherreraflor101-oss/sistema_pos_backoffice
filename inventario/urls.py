@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     # Tu ruta actual para el panel web
     path('compras/', views.gestionar_compras, name='gestionar_compras'),
+    path('login/', views.login_pos, name='login_pos'),
     
     # ==========================================
     # NUEVAS RUTAS PARA LA APLICACIÓN FLUTTER

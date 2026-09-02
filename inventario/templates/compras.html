@@ -95,6 +95,11 @@
 </div>
 
 <script>
+    // 🚀 1. REDIRECCIÓN DE SEGURIDAD (Si no está logueado, lo bota al login)
+    if(localStorage.getItem('pos_logueado') !== 'true') {
+        window.location.href = "/login/"; 
+    }
+
     const productosBase = JSON.parse('{{ productos_json|escapejs }}');
     let loteCompras = [];
     let costoUnitarioActual = 0;
@@ -1135,6 +1140,9 @@
         const formData = new FormData(form);
         formData.append('ajax', 'true');
         
+        // 🚀 2. INYECTAR EL ID DE LA EMPRESA AL GUARDAR EDICIÓN
+        formData.append('empresa_id', localStorage.getItem('pos_empresa_id'));
+        
         try {
             const res = await fetch(form.getAttribute('action'), { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
             const data = await res.json();
@@ -1835,6 +1843,9 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         }
 
         formData.append('ajax', 'true'); 
+        
+        // 🚀 3. INYECTAR EL ID DE LA EMPRESA AL CREAR PRODUCTOS O GUARDAR CONFIGURACIONES
+        formData.append('empresa_id', localStorage.getItem('pos_empresa_id'));
 
         try {
             const response = await fetch(form.getAttribute('action'), { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso POS - Multiempresa</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f172a; display: flex; justify-content: center; align-items: center; height: 100vh; color: #f8fafc; }
+        .login-card { background-color: #1e293b; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-top: 4px solid #0ea5e9; }
+        .login-card h2 { text-align: center; margin-bottom: 30px; font-size: 24px; color: #f8fafc; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
+        .form-group input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background-color: #0f172a; color: white; font-size: 16px; outline: none; transition: border 0.3s; }
+        .form-group input:focus { border-color: #0ea5e9; }
+        .btn-login { width: 100%; padding: 12px; background-color: #0ea5e9; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .btn-login:hover { background-color: #0284c7; }
+        #mensaje-error { color: #ef4444; font-size: 14px; text-align: center; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>Ingreso al Sistema POS</h2>
+        <form id="form-login">
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="username" required placeholder="Ej: socio_santarosa">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-login" id="btn-submit">Ingresar al Local</button>
+            <div id="mensaje-error"></div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evita que la página recargue
+            
+            const btn = document.getElementById('btn-submit');
+            const errorDiv = document.getElementById('mensaje-error');
+            
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            
+            btn.textContent = "Verificando...";
+            btn.disabled = true;
+            errorDiv.style.display = 'none';
+
+            // 🚀 AQUÍ ESTÁ EL PUENTE: Apuntamos al dominio de tu servidor principal
+            const urlSubdominio = "https://api-santarosa.bodegaelpueblo.com/api/interno/login_pos/";
+
+            try {
+                // Empaquetamos los datos como si fuera un formulario web
+                const formData = new URLSearchParams();
+                formData.append('username', user);
+                formData.append('password', pass);
+
+                const response = await fetch(urlSubdominio, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // 🚀 MAGIA: Guardamos la identidad de la empresa en la memoria del navegador
+                    localStorage.setItem('pos_empresa_id', data.empresa_id);
+                    localStorage.setItem('pos_empresa_nombre', data.empresa_nombre);
+                    localStorage.setItem('pos_usuario_nombre', data.nombre_usuario);
+                    localStorage.setItem('pos_logueado', 'true');
+
+                    // Redirigimos al catálogo/compras del Puerto 81
+                    window.location.href = "/";
+                } else {
+                    errorDiv.textContent = data.message;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                errorDiv.textContent = "Error al conectar con el servidor central.";
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.textContent = "Ingresar al Local";
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -562,3 +562,7 @@ def api_registrar_compra_app(request):
             return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def login_pos(request):
+    return render(request, 'login.html')
