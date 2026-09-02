@@ -435,7 +435,8 @@ def gestionar_compras(request):
             'volumen_nombre_3': data.get('volumen_nombre_3', ''),
             'volumen_cantidad_3': data.get('volumen_cantidad_3', ''),
             'volumen_precio_3': data.get('volumen_precio_3', ''),
-            'venta_granel': data.get('venta_granel', False)
+            'venta_granel': data.get('venta_granel', False),
+            'imagen': data.get('imagen_url', '') # 🚀 NUEVO: Traemos el estado de la foto desde Firebase
         })
     productos_json = json.dumps(lista_productos)
 
