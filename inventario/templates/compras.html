@@ -1898,11 +1898,29 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
                 }
 
                 if (form.id === 'formCalculadora') {
+                    // 🚀 1. INYECTAR LOS PRECIOS NUEVOS A LA MEMORIA DEL NAVEGADOR
+                    let nPMenor = parseSeguro(document.getElementById('inputPrecioMenor').value);
+                    let nPMayor = parseSeguro(document.getElementById('inputPrecioMayor').value);
+
+                    loteCompras.forEach(itemLote => {
+                        let productoEnMemoria = productosBase.find(x => x.id === itemLote.id);
+                        if (productoEnMemoria) {
+                            productoEnMemoria.precio_actual = nPMenor;
+                            productoEnMemoria.precio_mayor = nPMayor;
+                        }
+                    });
+
+                    // 🚀 2. LIMPIEZA NORMAL DE LA CALCULADORA
                     loteCompras = [];
                     document.getElementById('inputBonificacionVisible').value = '';
                     document.getElementById('inputMontoInteligente').value = '';
                     limpiarBonoExterno();
                     renderLote(); 
+                    
+                    // 🚀 3. REDIBUJAR EL CATÁLOGO INVISIBLEMENTE
+                    if (typeof filtrarCatalogo === 'function') {
+                        filtrarCatalogo();
+                    }
                 }
 
                 if (form.id === 'formEdicionHistorial' && trModalActual) {
