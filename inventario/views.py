@@ -76,17 +76,20 @@ def gestionar_compras(request):
                 precio_mayor = to_float(request.POST.get('nuevo_precio_mayor'))
 
                 # --- 1. ENVIAR AL SUBDOMINIO (MYSQL + CLOUDFLARE) ---
+                empresa_id = request.POST.get('empresa_id') # 🚀 Atrapamos la empresa
+                
                 archivos = {}
                 if 'nueva_imagen' in request.FILES:
                     img = request.FILES['nueva_imagen']
                     archivos = {'imagen': (img.name, img.read(), img.content_type)}
                 
-                # 🔴 CORRECCIÓN: Paquete limpio solo con lo que la App necesita
+                # 🚀 Añadimos la empresa al paquete para el Subdominio
                 datos_mysql = {
                     'nombre': nombre,
                     'precio_final': precio_menor,
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
+                    'empresa_id': empresa_id,
                 }
                 
                 try:
@@ -207,6 +210,21 @@ def gestionar_compras(request):
                         'volumen_precio': precio_mayor,
                         'ultimo_costo': costo_unitario_real,
                     })
+                    
+                    # ==========================================================
+                    # 🚀 NUEVO: ENVIAR EL PRECIO ACTUALIZADO AL SUBDOMINIO
+                    # ==========================================================
+                    empresa_id = request.POST.get('empresa_id')
+                    if empresa_id:
+                        try:
+                            datos_sincronizacion = {
+                                'nombre': p.get('nombre'),
+                                'precio_final': precio_menor,
+                                'empresa_id': empresa_id,
+                            }
+                            requests.post(f"{URL_MAESTRO}/api/interno/recibir_producto/", data=datos_sincronizacion, timeout=3)
+                        except Exception as e:
+                            print(f"⚠️ Error sincronizando precio del lote para {p.get('nombre')}:", e)
 
                 if len(bonos_externos) > 0:
                     for b in bonos_externos:
@@ -366,25 +384,31 @@ def gestionar_compras(request):
                 subcategoria_id = request.POST.get('editar_subcategoria_id') # 🔴 NUEVO
                 precio_menor = to_float(request.POST.get('editar_precio_menor'))
                 precio_mayor = to_float(request.POST.get('editar_precio_mayor'))
+                
+                # 🚀 NUEVO: Atrapamos el Precio Antiguo
+                precio_antiguo = to_float(request.POST.get('editar_precio_antiguo')) 
 
-                # ==========================================================
-                # 🚀 REGLA DE ORO: Enviar al Subdominio SOLO SI trae imagen
-                # ==========================================================
+                empresa_id = request.POST.get('empresa_id') 
+                
+                datos_mysql = {
+                    'nombre': nombre,
+                    'precio_final': precio_menor,
+                    'precio_antiguo': precio_antiguo, # 🚀 Lo enviamos al Subdominio
+                    'categoria_id': categoria_id,
+                    'subcategoria_id': subcategoria_id,
+                    'empresa_id': empresa_id,
+                }
+                
+                archivos = {}
                 if 'editar_imagen' in request.FILES:
                     img = request.FILES['editar_imagen']
                     archivos = {'imagen': (img.name, img.read(), img.content_type)}
                     
-                    datos_mysql = {
-                        'nombre': nombre,
-                        'precio_final': precio_menor,
-                        'categoria_id': categoria_id,
-                        'subcategoria_id': subcategoria_id,
-                    }
-                    try:
-                        # Lo enviamos al Subdominio para que lo procese (Update or Create)
-                        requests.post(f"{URL_MAESTRO}/api/interno/recibir_producto/", data=datos_mysql, files=archivos, timeout=5)
-                    except Exception as api_err:
-                        print("⚠️ Advertencia: Error conectando con el Subdominio:", api_err)
+                try:
+                    # Lo enviamos al Subdominio. Si hay foto, la lleva; si no, solo actualiza precio y datos.
+                    requests.post(f"{URL_MAESTRO}/api/interno/recibir_producto/", data=datos_mysql, files=archivos, timeout=5)
+                except Exception as api_err:
+                    print("⚠️ Advertencia: Error conectando con el Subdominio:", api_err)
 
                 # ==========================================================
                 # 💾 SIEMPRE ACTUALIZAR EN FIREBASE (POS local)
@@ -394,7 +418,8 @@ def gestionar_compras(request):
                         'nombre': nombre,
                         'codigo_barras': codigo_barras,
                         'venta_granel': es_granel,
-                        'precio': precio_menor,             
+                        'precio': precio_menor,
+                        'precio_antiguo': precio_antiguo, # 🚀 Lo guardamos en Firebase local
                         'volumen_precio': precio_mayor,
                     }
                     if 'editar_imagen' in request.FILES: # 🚀 NUEVO: Deja la huella si subió foto
@@ -422,7 +447,8 @@ def gestionar_compras(request):
             'id': doc.id,
             'nombre': data.get('nombre', 'Sin nombre'),
             'precio_actual': data.get('precio', 0.0),
-            'precio_mayor': data.get('volumen_precio', 0.0), 
+            'precio_antiguo': data.get('precio_antiguo', 0.0), # 🚀 NUEVO LECTOR
+            'precio_mayor': data.get('volumen_precio', 0.0),
             'paquete_nombre': data.get('paquete_nombre', ''),
             'paquete_codigo': data.get('paquete_codigo', ''),
             'paquete_cantidad': data.get('paquete_cantidad', 1),

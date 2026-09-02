@@ -778,11 +778,15 @@
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-6">
+                        <div class="col-4">
+                            <label class="text-muted small fw-bold">P. Antiguo (S/)</label>
+                            <input type="number" step="any" name="editar_precio_antiguo" id="editCatPAntiguo" class="form-control text-white" style="border-color: #4A5568;" placeholder="0.00">
+                        </div>
+                        <div class="col-4">
                             <label class="text-brand-orange small fw-bold">P. Público (S/)</label>
                             <input type="number" step="any" name="editar_precio_menor" id="editCatPMenor" class="form-control text-white fw-bold" style="border-color: var(--accent-orange);">
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
                             <label class="text-brand-green small fw-bold">P. Mayor (S/)</label>
                             <input type="number" step="any" name="editar_precio_mayor" id="editCatPMayor" class="form-control text-white fw-bold" style="border-color: var(--green-success);">
                         </div>
@@ -1054,7 +1058,12 @@
         document.querySelector('input[name="editar_imagen"]').value = '';
         document.getElementById('editCatCodigo').value = p.codigo_barras || '';
         document.getElementById('editCatPMenor').value = parseSeguro(p.precio_actual).toFixed(2);
+        
+        // 🚀 NUEVO: Cargar el precio antiguo
+        document.getElementById('editCatPAntiguo').value = parseSeguro(p.precio_antiguo).toFixed(2);
+        
         document.getElementById('editCatPMayor').value = parseSeguro(p.precio_mayor).toFixed(2);
+        
         document.getElementById('editCatGranel').checked = p.venta_granel;
         
         // >>> NUEVO: Lógica para mostrar niveles solo lectura con Total <<<
@@ -1164,6 +1173,9 @@
                     pLocal.codigo_barras = data.datos.codigo_barras;
                     pLocal.precio_actual = data.datos.precio;
                     pLocal.precio_mayor = data.datos.volumen_precio;
+                    
+                    // 🚀 NUEVO: Guardar en memoria
+                    pLocal.precio_antiguo = data.datos.precio_antiguo;
                     pLocal.venta_granel = data.datos.venta_granel;
                     if(data.datos.categoria_id) pLocal.categoria_id = data.datos.categoria_id;
                     
