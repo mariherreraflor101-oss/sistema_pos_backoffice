@@ -98,7 +98,8 @@ def gestionar_compras(request):
                 # --- 2. GUARDAR EN FIREBASE (PARA LAS CAJERAS) ---
                 nuevo_producto = {
                     'nombre': nombre,
-                    'codigo_barras': codigo_barras,  # <--- AQUÍ SÍ SE QUEDA (Para el POS)
+                    'tiene_imagen': 'nueva_imagen' in request.FILES, # 🚀 NUEVO: Deja la huella
+                    'codigo_barras': codigo_barras,
                     'venta_granel': es_granel,
                     'precio': precio_menor,             
                     'volumen_precio': precio_mayor,
@@ -396,6 +397,8 @@ def gestionar_compras(request):
                         'precio': precio_menor,             
                         'volumen_precio': precio_mayor,
                     }
+                    if 'editar_imagen' in request.FILES: # 🚀 NUEVO: Deja la huella si subió foto
+                        datos_actualizar['tiene_imagen'] = True
                     if categoria_id:
                         datos_actualizar['categoria_id'] = categoria_id
                     if subcategoria_id:
