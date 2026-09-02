@@ -770,11 +770,10 @@
                         <input type="text" name="editar_codigo_barras" id="editCatCodigo" class="form-control text-white">
                     </div>
 
-                    <!-- NUEVO: SUBIDA DE IMAGEN (EL FILTRO PARA LA APP) -->
                     <div class="mb-4 p-3 rounded" style="background-color: rgba(0, 213, 255, 0.05); border: 1px dashed rgba(0, 213, 255, 0.3);">
                         <label class="form-label text-brand-blue small fw-bold"><i class="bi bi-image me-1"></i> Imagen para la App</label>
                         <input type="file" name="editar_imagen" class="form-control bg-dark text-white border-info" accept="image/png, image/jpeg, image/webp">
-                        <small class="text-muted" style="font-size: 0.7rem;">⚠️ Si subes una foto, este producto se sincronizará automáticamente con tu App (Subdominio).</small>
+                        <small class="text-muted" style="font-size: 0.7rem;">⚠️ <b>Nota:</b> El navegador oculta la foto por seguridad. Si ya subiste una antes, <b>deja esto vacío para conservarla</b>. Si subes una foto nueva, reemplazará a la anterior.</small>
                     </div>
 
                     <div class="row mb-3">
@@ -1044,6 +1043,8 @@
         
         document.getElementById('editCatId').value = p.id;
         document.getElementById('editCatNombre').value = p.nombre;
+        // 🚀 NUEVO: Limpia el botón de archivos cada vez que abres un producto
+        document.querySelector('input[name="editar_imagen"]').value = '';
         document.getElementById('editCatCodigo').value = p.codigo_barras || '';
         document.getElementById('editCatPMenor').value = parseSeguro(p.precio_actual).toFixed(2);
         document.getElementById('editCatPMayor').value = parseSeguro(p.precio_mayor).toFixed(2);
