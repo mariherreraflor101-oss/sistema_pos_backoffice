@@ -295,13 +295,26 @@ def gestionar_compras(request):
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error: {str(e)}'})
 
         elif action == 'eliminar_producto':
-            try:
                 producto_id = request.POST.get('producto_id')
-                if producto_id:
-                    db.collection('productos').document(producto_id).delete()
-                    if is_ajax: return JsonResponse({'status': 'success', 'message': '🗑️ Producto eliminado.'})
-            except Exception as e:
-                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})
+                producto_nombre = request.POST.get('producto_nombre')
+                empresa_id = request.POST.get('empresa_id') # 🚀 Recibimos la empresa
+
+                # Borrar de Firebase local
+                db.collection('productos').document(producto_id).delete()
+
+                # 🚀 NUEVO: Mandar orden de ejecución (Soft Delete) al Subdominio
+                if empresa_id:
+                    try:
+                        requests.post(f"{URL_MAESTRO}/api/interno/recibir_producto/", data={
+                            'nombre': producto_nombre,
+                            'empresa_id': empresa_id,
+                            'eliminar': 'true'
+                        }, timeout=3)
+                    except Exception as e:
+                        print("⚠️ Error eliminando en el Subdominio:", e)
+
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'message': f'🟩 Producto "{producto_nombre}" eliminado.'})
 
         elif action == 'filtrar_historial':
             try:
@@ -392,12 +405,18 @@ def gestionar_compras(request):
                 # 🚀 NUEVO: Atrapamos el Precio Antiguo
                 precio_antiguo = to_float(request.POST.get('editar_precio_antiguo')) 
 
+                # 🚀 NUEVO: Leemos el nombre viejo antes de enviar el nuevo
+                doc_ref = db.collection('productos').document(producto_id)
+                doc_actual = doc_ref.get()
+                nombre_antiguo = doc_actual.to_dict().get('nombre', nombre) if doc_actual.exists else nombre
+                
                 empresa_id = request.POST.get('empresa_id') 
                 
                 datos_mysql = {
                     'nombre': nombre,
+                    'nombre_antiguo': nombre_antiguo, # 🚀 El rastreador anti-duplicados
                     'precio_final': precio_menor,
-                    'precio_antiguo': precio_antiguo, # 🚀 Lo enviamos al Subdominio
+                    'precio_antiguo': precio_antiguo,
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
                     'empresa_id': empresa_id,

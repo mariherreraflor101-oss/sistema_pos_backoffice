@@ -2004,6 +2004,9 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
             formData.append('producto_nombre', nombreProducto);
             formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
             formData.append('ajax', 'true');
+            
+            // 🚀 AÑADE ESTA LÍNEA EXACTAMENTE AQUÍ
+            formData.append('empresa_id', localStorage.getItem('pos_empresa_id'));
             fetch(document.getElementById('formEditNombre').getAttribute('action'), { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(res => res.json()).then(data => {
                 if (data.status === 'success') {
