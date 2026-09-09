@@ -87,9 +87,11 @@ def gestionar_compras(request):
                 datos_mysql = {
                     'nombre': nombre,
                     'precio_final': precio_menor,
+                    'precio_antiguo': 0, 
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
                     'empresa_id': empresa_id,
+                    'venta_granel': 'true' if es_granel else 'false', # 🚀 INYECCIÓN AL CREAR
                 }
                 
                 try:
@@ -420,6 +422,7 @@ def gestionar_compras(request):
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
                     'empresa_id': empresa_id,
+                    'venta_granel': 'true' if es_granel else 'false', # 🚀 INYECCIÓN AL EDITAR
                 }
                 
                 archivos = {}
