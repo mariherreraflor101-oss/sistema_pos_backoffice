@@ -61,6 +61,34 @@ def gestionar_compras(request):
                 return JsonResponse({'status': 'error', 'subcategorias': []})
 
         # ========================================================
+        # 🚀 PUENTE: MÓDULO DE CONTROL SUPERIOR (CEO / SOCIOS)
+        # ========================================================
+        elif action == 'listar_empleados_control':
+            try:
+                res = requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                    'accion': 'listar',
+                    'empresa_id': request.POST.get('empresa_id'),
+                    'rol_solicitante': request.POST.get('rol_solicitante')
+                }, timeout=5)
+                return JsonResponse(res.json())
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f'Fallo de conexión con el VPS: {str(e)}'})
+
+        elif action == 'actualizar_empleado_control':
+            try:
+                res = requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                    'accion': 'actualizar',
+                    'empresa_id': request.POST.get('empresa_id'),
+                    'usuario_id': request.POST.get('usuario_id'),
+                    'nuevo_rol': request.POST.get('nuevo_rol'),
+                    'is_active': request.POST.get('is_active'),
+                    'rol_solicitante': request.POST.get('rol_solicitante')
+                }, timeout=5)
+                return JsonResponse(res.json())
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f'Fallo de conexión con el VPS: {str(e)}'})
+
+        # ========================================================
         # 🚀 LA DOBLE ACCIÓN: CREAR PRODUCTO
         # ========================================================
         elif action == 'crear_producto':
@@ -625,43 +653,3 @@ def login_pos(request):
 
 
 
-# ==========================================================
-# 🛡️ NUEVO MÓDULO: CONTROL SUPERIOR (PUENTE CON EL VPS)
-# ==========================================================
-def control_superior(request):
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        empresa_id = request.POST.get('empresa_id') # Lo envía el frontend local
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('ajax') == 'true'
-
-        if not empresa_id:
-            return JsonResponse({'status': 'error', 'message': 'ID de empresa no proporcionado.'})
-
-        # --- 1. SOLICITAR LISTA DE EMPLEADOS AL VPS ---
-        if action == 'listar_empleados':
-            try:
-                # El Puerto 81 hace la llamada secreta a tu VPS
-                res = requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
-                    'accion': 'listar',
-                    'empresa_id': empresa_id
-                }, timeout=5)
-                return JsonResponse(res.json())
-            except Exception as e:
-                return JsonResponse({'status': 'error', 'message': f'Error de conexión con el Maestro: {str(e)}'})
-
-        # --- 2. ENVIAR ORDEN DE ACTUALIZACIÓN AL VPS ---
-        elif action == 'actualizar_empleado':
-            try:
-                res = requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
-                    'accion': 'actualizar',
-                    'empresa_id': empresa_id,
-                    'usuario_id': request.POST.get('usuario_id'),
-                    'nuevo_rol': request.POST.get('nuevo_rol'),
-                    'is_active': request.POST.get('is_active')
-                }, timeout=5)
-                return JsonResponse(res.json())
-            except Exception as e:
-                return JsonResponse({'status': 'error', 'message': f'Error de conexión con el Maestro: {str(e)}'})
-
-    # Si es GET, renderiza la nueva página HTML
-    return render(request, 'control_superior.html')

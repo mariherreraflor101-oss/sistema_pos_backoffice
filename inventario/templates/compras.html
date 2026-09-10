@@ -2382,30 +2382,35 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
     }
 
     // =========================================================
-    // 🚀 MÓDULO CONTROL SUPERIOR (GLOBAL)
+    // 🚀 MÓDULO CONTROL SUPERIOR (VÍA PUENTE LOCAL)
     // =========================================================
     async function cargarSubordinados() {
         let tbody = document.getElementById('tablaControlSuperiorBody');
         const empresa_id = localStorage.getItem('pos_empresa_id'); 
+        const rol_solicitante = localStorage.getItem('pos_rol') || 'Dueño / CEO'; 
         
         if(!empresa_id) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">⚠️ Error: Inicia sesión nuevamente en la caja para cargar tu credencial de empresa.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">⚠️ Error: Faltan credenciales locales. Reinicia sesión.</td></tr>';
             return;
         }
 
         let formData = new FormData();
-        formData.append('accion', 'listar');
+        formData.append('action', 'listar_empleados_control'); // Acción para tu views.py local
+        formData.append('ajax', 'true');
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
         formData.append('empresa_id', empresa_id);
+        formData.append('rol_solicitante', rol_solicitante); 
 
         try {
-            let respuesta = await fetch(`${URL_MAESTRO_JS}/api/interno/control-superior/`, { method: 'POST', body: formData });
+            // 🚀 Disparamos a la misma URL de compras, para que views.py haga el puente
+            let respuesta = await fetch(window.location.href, { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
             let data = await respuesta.json();
 
             tbody.innerHTML = ''; 
 
             if (data.status === 'success') {
                 if(data.empleados.length === 0){
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4 fw-bold">No tienes personal subordinado (cajeros, encargadas) registrado.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4 fw-bold">No hay cuentas subordinadas vinculadas.</td></tr>';
                     return;
                 }
 
@@ -2415,19 +2420,28 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
                     let colorEstado = emp.is_active ? 'var(--green-success)' : 'var(--red-danger)';
                     let textoEstado = emp.is_active ? 'Activo' : 'Bloqueado';
 
+                    let opcionesRol = '';
+                    if (rol_solicitante === 'Dueño / CEO') {
+                        opcionesRol = `<option value="Socio Inversor" ${emp.rol === 'Socio Inversor' ? 'selected' : ''}>Socio Inversor</option>`;
+                    } else {
+                        opcionesRol = `
+                            <option value="encargada" ${emp.rol === 'encargada' ? 'selected' : ''}>Encargada</option>
+                            <option value="cajero" ${emp.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
+                            <option value="despachador" ${emp.rol === 'despachador' ? 'selected' : ''}>Despachador</option>
+                        `;
+                    }
+
                     tbody.innerHTML += `
-                        <tr>
-                            <td class="fw-bold text-brand-blue" style="font-size: 14px;">${identificador}</td>
-                            <td>
+                        <tr style="border-bottom: 1px solid #2A2A2D;">
+                            <td class="fw-bold text-brand-blue" style="font-size: 14px; padding: 12px;">${identificador}</td>
+                            <td style="padding: 12px;">
                                 <select onchange="modificarEmpleado(${emp.id}, this.value, ${emp.is_active})" class="form-select form-select-sm text-white shadow-none" style="background-color: var(--bg-main); border-color: rgba(255,255,255,0.1); width: 150px;">
-                                    <option value="encargada" ${emp.rol === 'encargada' ? 'selected' : ''}>Encargada</option>
-                                    <option value="cajero" ${emp.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
-                                    <option value="despachador" ${emp.rol === 'despachador' ? 'selected' : ''}>Despachador</option>
+                                    ${opcionesRol}
                                 </select>
                             </td>
-                            <td class="text-muted" style="font-size: 13px;">${sedeNombre}</td>
-                            <td style="color: ${colorEstado}; font-weight: bold; font-size: 13px;">${textoEstado}</td>
-                            <td class="text-center">
+                            <td class="text-muted" style="font-size: 13px; padding: 12px;">${sedeNombre}</td>
+                            <td style="color: ${colorEstado}; font-weight: bold; font-size: 13px; padding: 12px;">${textoEstado}</td>
+                            <td class="text-center" style="padding: 12px;">
                                 ${emp.is_active 
                                     ? `<button onclick="modificarEmpleado(${emp.id}, '${emp.rol}', false)" class="btn btn-sm btn-outline-danger border-0 fw-bold"><i class="bi bi-x-circle-fill me-1"></i> Desactivar</button>`
                                     : `<button onclick="modificarEmpleado(${emp.id}, '${emp.rol}', true)" class="btn btn-sm btn-outline-success border-0 fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Activar</button>`
@@ -2440,39 +2454,44 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">${data.message}</td></tr>`;
             }
         } catch (error) {
-            console.error("Error al cargar personal:", error);
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">Error de conexión con el servidor maestro.</td></tr>';
+            console.error("Error técnico al cargar personal:", error);
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">❌ Error de puente local: ${error.message}</td></tr>`;
         }
     }
 
     async function modificarEmpleado(usuarioId, nuevoRol, nuevoEstado) {
-        if (!nuevoEstado && !confirm("¿Estás seguro de quitarle el acceso al sistema a este empleado?")) {
+        if (!nuevoEstado && !confirm("¿Estás seguro de quitarle el acceso al sistema a esta cuenta?")) {
             cargarSubordinados(); 
             return;
         }
 
         const empresa_id = localStorage.getItem('pos_empresa_id');
+        const rol_solicitante = localStorage.getItem('pos_rol') || 'Dueño / CEO';
+
         let formData = new FormData();
-        formData.append('accion', 'actualizar');
+        formData.append('action', 'actualizar_empleado_control'); // Acción para tu views.py local
+        formData.append('ajax', 'true');
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        
         formData.append('empresa_id', empresa_id);
         formData.append('usuario_id', usuarioId);
         formData.append('nuevo_rol', nuevoRol);
         formData.append('is_active', nuevoEstado);
+        formData.append('rol_solicitante', rol_solicitante);
 
         try {
-            let respuesta = await fetch(`${URL_MAESTRO_JS}/api/interno/control-superior/`, { method: 'POST', body: formData });
+            let respuesta = await fetch(window.location.href, { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
             let data = await respuesta.json();
 
             if (data.status === 'success') {
                 mostrarToast(data.message, 'success');
-                cargarSubordinados(); 
             } else {
                 mostrarToast(data.message, 'danger');
-                cargarSubordinados(); 
             }
+            cargarSubordinados(); 
         } catch (error) {
             console.error("Error al modificar empleado:", error);
-            mostrarToast('Error de conexión con el servidor central', 'danger');
+            mostrarToast('Error de comunicación con el puente local', 'danger');
         }
     }
 
