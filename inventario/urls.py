@@ -7,11 +7,6 @@ urlpatterns = [
     path('login/', views.login_pos, name='login_pos'),
     
     # ==========================================
-    # 🛡️ NUEVO MÓDULO: CONTROL SUPERIOR (SOCIOS)
-    # ==========================================
-    path('control-superior/', views.control_superior, name='control_superior'),
-    
-    # ==========================================
     # RUTAS PARA LA APLICACIÓN FLUTTER
     # ==========================================
     path('api/historial/', views.api_historial_compras, name='api_historial'),
