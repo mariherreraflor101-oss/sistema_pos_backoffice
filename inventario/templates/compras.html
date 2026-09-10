@@ -2368,19 +2368,28 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         }
     }
 
-    // Ejecutar apenas cargue la página
-    // Ejecutar apenas cargue la página
-    document.addEventListener('DOMContentLoaded', () => {
-        cargarCategoriasOficiales();
-        cargarFiltroSubcategorias(); // 🚀 Disparamos la carga del filtro
+    async function cargarFiltroSubcategorias() {
+        try {
+            const res = await fetch(`${URL_MAESTRO_JS}/api/interno/subcategorias/todas/`);
+            const data = await res.json();
+            const selectorFiltro = document.getElementById('filtroSubcategoria');
+            data.subcategorias.forEach(sub => {
+                selectorFiltro.innerHTML += `<option value="${sub.id}" style="background-color: #161B29; color: white;">📌 ${sub.nombre}</option>`;
+            });
+        } catch (error) {
+            console.error("Error poblando el filtro de subcategorías:", error);
+        }
+    }
 
     // =========================================================
-    // 🚀 MÓDULO CONTROL SUPERIOR (Gestión de Cajeros)
+    // 🚀 MÓDULO CONTROL SUPERIOR (GLOBAL)
     // =========================================================
     async function cargarSubordinados() {
-        const empresa_id = localStorage.getItem('pos_empresa_id'); // 🛡️ Lee la empresa del socio logueado
+        let tbody = document.getElementById('tablaControlSuperiorBody');
+        const empresa_id = localStorage.getItem('pos_empresa_id'); 
+        
         if(!empresa_id) {
-            mostrarToast('Error: No se encontró la credencial de empresa.', 'danger');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">⚠️ Error: Inicia sesión nuevamente en la caja para cargar tu credencial de empresa.</td></tr>';
             return;
         }
 
@@ -2392,12 +2401,11 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
             let respuesta = await fetch(`${URL_MAESTRO_JS}/api/interno/control-superior/`, { method: 'POST', body: formData });
             let data = await respuesta.json();
 
-            let tbody = document.getElementById('tablaControlSuperiorBody');
             tbody.innerHTML = ''; 
 
             if (data.status === 'success') {
                 if(data.empleados.length === 0){
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4 fw-bold">No tienes personal registrado en tu empresa.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4 fw-bold">No tienes personal subordinado (cajeros, encargadas) registrado.</td></tr>';
                     return;
                 }
 
@@ -2433,13 +2441,13 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
             }
         } catch (error) {
             console.error("Error al cargar personal:", error);
-            document.getElementById('tablaControlSuperiorBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">Error de conexión con el servidor maestro.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">Error de conexión con el servidor maestro.</td></tr>';
         }
     }
 
     async function modificarEmpleado(usuarioId, nuevoRol, nuevoEstado) {
         if (!nuevoEstado && !confirm("¿Estás seguro de quitarle el acceso al sistema a este empleado?")) {
-            cargarSubordinados(); // Refrescar para deshacer el cambio visual del interruptor
+            cargarSubordinados(); 
             return;
         }
 
@@ -2457,20 +2465,24 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
 
             if (data.status === 'success') {
                 mostrarToast(data.message, 'success');
-                cargarSubordinados(); // Recarga la tabla para mostrar el cambio oficial
+                cargarSubordinados(); 
             } else {
                 mostrarToast(data.message, 'danger');
                 cargarSubordinados(); 
             }
         } catch (error) {
             console.error("Error al modificar empleado:", error);
-            mostrarToast('Error de conexión con el servidor maestro', 'danger');
+            mostrarToast('Error de conexión con el servidor central', 'danger');
         }
     }
 
-
+    // =========================================================
+    // 🚀 INICIALIZADOR ÚNICO AL CARGAR LA PÁGINA
+    // =========================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarCategoriasOficiales();
+        cargarFiltroSubcategorias(); 
     });
 </script>
 </body>
 </html>
-}
