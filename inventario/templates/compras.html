@@ -140,8 +140,11 @@
         <a class="sidebar-link" id="menuCatalogo" onclick="cambiarPestana('catalogo')">
             <i class="bi bi-journal-text me-2"></i> Catálogo Maestro
         </a>
+        <!-- 🚀 NUEVO BOTÓN DE CONTROL SUPERIOR -->
+        <a class="sidebar-link" id="menuControl" onclick="cambiarPestana('control')">
+            <i class="bi bi-people-fill me-2"></i> Control Superior
+        </a>
     </div>
-
     <div class="flex-grow-1 p-4">
         
         <div id="pestanaCostos">
@@ -633,13 +636,47 @@
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
+                        <!-- ... (tu código del catálogo) ... -->
                         <tbody id="tablaCatalogoBody">
                             <!-- Se llena con JavaScript -->
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div> <!-- 👈 ESTE ES EL ÚLTIMO </div> QUE ME MOSTRASTE -->
+
+        <!-- ========================================== -->
+        <!-- 🚀 PESTAÑA DE CONTROL SUPERIOR (PEGAR AQUÍ) -->
+        <!-- ========================================== -->
+        <div id="pestanaControl" style="display: none;">
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-0 text-white">Gestión de Personal</h3>
+                    <p class="text-muted mb-0">Administra los roles y accesos de los trabajadores de tu local.</p>
+                </div>
+            </div>
+
+            <div class="card p-0" style="overflow: hidden; border: 1px solid var(--border-color); background-color: var(--bg-card);">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-custom-header">
+                            <tr>
+                                <th>Usuario / Email</th>
+                                <th>Rol Asignado</th>
+                                <th>Sede Asignada</th>
+                                <th>Estado</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaControlSuperiorBody">
+                            <tr><td colspan="5" class="text-center text-muted py-4 fw-bold">Cargando personal...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+    -- 👈 Este es el cierre final del d-flex principal -->
 
 
 
@@ -973,10 +1010,12 @@
         document.getElementById('pestanaCostos').style.display = 'none';
         document.getElementById('pestanaRegistro').style.display = 'none';
         document.getElementById('pestanaCatalogo').style.display = 'none';
+        document.getElementById('pestanaControl').style.display = 'none'; // 🚀 NUEVO
         
         document.getElementById('menuCostos').classList.remove('active');
         document.getElementById('menuRegistro').classList.remove('active');
         document.getElementById('menuCatalogo').classList.remove('active');
+        document.getElementById('menuControl').classList.remove('active'); // 🚀 NUEVO
         
         if(pestaña === 'costos') {
             document.getElementById('pestanaCostos').style.display = 'block';
@@ -989,6 +1028,10 @@
             document.getElementById('pestanaCatalogo').style.display = 'block';
             document.getElementById('menuCatalogo').classList.add('active');
             renderizarCatalogo(productosBase);
+        } else if(pestaña === 'control') { // 🚀 NUEVO
+            document.getElementById('pestanaControl').style.display = 'block';
+            document.getElementById('menuControl').classList.add('active');
+            cargarSubordinados(); // Dispara la búsqueda al servidor central
         }
     }
 
@@ -2330,6 +2373,102 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
     document.addEventListener('DOMContentLoaded', () => {
         cargarCategoriasOficiales();
         cargarFiltroSubcategorias(); // 🚀 Disparamos la carga del filtro
+
+    // =========================================================
+    // 🚀 MÓDULO CONTROL SUPERIOR (Gestión de Cajeros)
+    // =========================================================
+    async function cargarSubordinados() {
+        const empresa_id = localStorage.getItem('pos_empresa_id'); // 🛡️ Lee la empresa del socio logueado
+        if(!empresa_id) {
+            mostrarToast('Error: No se encontró la credencial de empresa.', 'danger');
+            return;
+        }
+
+        let formData = new FormData();
+        formData.append('accion', 'listar');
+        formData.append('empresa_id', empresa_id);
+
+        try {
+            let respuesta = await fetch(`${URL_MAESTRO_JS}/api/interno/control-superior/`, { method: 'POST', body: formData });
+            let data = await respuesta.json();
+
+            let tbody = document.getElementById('tablaControlSuperiorBody');
+            tbody.innerHTML = ''; 
+
+            if (data.status === 'success') {
+                if(data.empleados.length === 0){
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4 fw-bold">No tienes personal registrado en tu empresa.</td></tr>';
+                    return;
+                }
+
+                data.empleados.forEach(emp => {
+                    let identificador = emp.email || emp.username;
+                    let sedeNombre = emp.sede_asignada__nombre || '-';
+                    let colorEstado = emp.is_active ? 'var(--green-success)' : 'var(--red-danger)';
+                    let textoEstado = emp.is_active ? 'Activo' : 'Bloqueado';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-bold text-brand-blue" style="font-size: 14px;">${identificador}</td>
+                            <td>
+                                <select onchange="modificarEmpleado(${emp.id}, this.value, ${emp.is_active})" class="form-select form-select-sm text-white shadow-none" style="background-color: var(--bg-main); border-color: rgba(255,255,255,0.1); width: 150px;">
+                                    <option value="encargada" ${emp.rol === 'encargada' ? 'selected' : ''}>Encargada</option>
+                                    <option value="cajero" ${emp.rol === 'cajero' ? 'selected' : ''}>Cajero</option>
+                                    <option value="despachador" ${emp.rol === 'despachador' ? 'selected' : ''}>Despachador</option>
+                                </select>
+                            </td>
+                            <td class="text-muted" style="font-size: 13px;">${sedeNombre}</td>
+                            <td style="color: ${colorEstado}; font-weight: bold; font-size: 13px;">${textoEstado}</td>
+                            <td class="text-center">
+                                ${emp.is_active 
+                                    ? `<button onclick="modificarEmpleado(${emp.id}, '${emp.rol}', false)" class="btn btn-sm btn-outline-danger border-0 fw-bold"><i class="bi bi-x-circle-fill me-1"></i> Desactivar</button>`
+                                    : `<button onclick="modificarEmpleado(${emp.id}, '${emp.rol}', true)" class="btn btn-sm btn-outline-success border-0 fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Activar</button>`
+                                }
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">${data.message}</td></tr>`;
+            }
+        } catch (error) {
+            console.error("Error al cargar personal:", error);
+            document.getElementById('tablaControlSuperiorBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4 fw-bold">Error de conexión con el servidor maestro.</td></tr>';
+        }
+    }
+
+    async function modificarEmpleado(usuarioId, nuevoRol, nuevoEstado) {
+        if (!nuevoEstado && !confirm("¿Estás seguro de quitarle el acceso al sistema a este empleado?")) {
+            cargarSubordinados(); // Refrescar para deshacer el cambio visual del interruptor
+            return;
+        }
+
+        const empresa_id = localStorage.getItem('pos_empresa_id');
+        let formData = new FormData();
+        formData.append('accion', 'actualizar');
+        formData.append('empresa_id', empresa_id);
+        formData.append('usuario_id', usuarioId);
+        formData.append('nuevo_rol', nuevoRol);
+        formData.append('is_active', nuevoEstado);
+
+        try {
+            let respuesta = await fetch(`${URL_MAESTRO_JS}/api/interno/control-superior/`, { method: 'POST', body: formData });
+            let data = await respuesta.json();
+
+            if (data.status === 'success') {
+                mostrarToast(data.message, 'success');
+                cargarSubordinados(); // Recarga la tabla para mostrar el cambio oficial
+            } else {
+                mostrarToast(data.message, 'danger');
+                cargarSubordinados(); 
+            }
+        } catch (error) {
+            console.error("Error al modificar empleado:", error);
+            mostrarToast('Error de conexión con el servidor maestro', 'danger');
+        }
+    }
+
+
     });
 </script>
 </body>
