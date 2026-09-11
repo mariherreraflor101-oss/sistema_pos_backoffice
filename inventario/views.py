@@ -104,14 +104,14 @@ def gestionar_compras(request):
                 precio_mayor = to_float(request.POST.get('nuevo_precio_mayor'))
 
                 # --- 1. ENVIAR AL SUBDOMINIO (MYSQL + CLOUDFLARE) ---
-                empresa_id = request.POST.get('empresa_id') # 🚀 Atrapamos la empresa
+                empresa_id = request.POST.get('empresa_id') 
+                es_global = request.POST.get('es_global') == 'on'  # 🚀 ATRAPAMOS EL INTERRUPTOR
                 
                 archivos = {}
                 if 'nueva_imagen' in request.FILES:
                     img = request.FILES['nueva_imagen']
                     archivos = {'imagen': (img.name, img.read(), img.content_type)}
                 
-                # 🚀 Añadimos la empresa al paquete para el Subdominio
                 datos_mysql = {
                     'nombre': nombre,
                     'precio_final': precio_menor,
@@ -119,7 +119,8 @@ def gestionar_compras(request):
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
                     'empresa_id': empresa_id,
-                    'venta_granel': 'true' if es_granel else 'false', # 🚀 INYECCIÓN AL CREAR
+                    'venta_granel': 'true' if es_granel else 'false',
+                    'es_global': 'true' if es_global else 'false', # 🌍 INYECTAMOS LA ORDEN GLOBAL
                 }
                 
                 try:

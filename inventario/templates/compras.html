@@ -708,6 +708,19 @@
                         <small class="text-muted" style="font-size: 0.7rem;">El sistema la comprimirá y recortará automáticamente a 600x600.</small>
                     </div>
 
+                    <!-- 🌍 NUEVO: INTERRUPTOR GLOBAL (SOLO CEO) -->
+                    <div id="bloqueGlobalCEO" class="mb-4 p-3 rounded" style="display: none; background-color: rgba(255, 102, 0, 0.05); border: 1px solid var(--accent-orange);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-check-label text-brand-orange small fw-bold" for="switchGlobalCEO">
+                                <i class="bi bi-globe-americas me-1"></i> Catálogo Global (Para todos los socios)
+                            </label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" name="es_global" id="switchGlobalCEO">
+                            </div>
+                        </div>
+                        <small class="text-muted mt-2 d-block" style="font-size: 0.7rem;">Si lo activas, el nombre, código y foto se guardarán en la Bóveda Central para que los socios puedan importarlo.</small>
+                    </div>
+
                     <div class="mb-3 p-3 rounded" style="background-color: rgba(0, 213, 255, 0.05); border: 1px dashed rgba(0, 213, 255, 0.3);">
                         <div class="d-flex justify-content-between align-items-center">
                             <label class="form-check-label text-brand-blue small fw-bold" style="cursor: pointer;" for="switchPrecioModal"><i class="bi bi-tag-fill me-1"></i> Asignar Precio Inicial (Opcional)</label>
@@ -2347,12 +2360,15 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
 
     
 
-    // =========================================================
-    // 🚀 INICIALIZADOR ÚNICO AL CARGAR LA PÁGINA
-    // =========================================================
     document.addEventListener('DOMContentLoaded', () => {
         cargarCategoriasOficiales();
         cargarFiltroSubcategorias(); 
+        
+        // 🚀 NUEVO: Mostrar el botón global solo si es CEO
+        if(localStorage.getItem('pos_rol') === 'Dueño / CEO') {
+            const bloqueGlobal = document.getElementById('bloqueGlobalCEO');
+            if (bloqueGlobal) bloqueGlobal.style.display = 'block';
+        }
     });
 </script>
 </body>
