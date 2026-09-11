@@ -2460,11 +2460,84 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         window.location.href = '/login/';
     }
 
-    // Función para abrir la Vitrina
-    function abrirVitrinaGlobal() {
+    // =========================================================
+    // 🌍 LÓGICA DE LA VITRINA GLOBAL (CATÁLOGO CENTRAL)
+    // =========================================================
+    let productosVitrina = [];
+
+    async function abrirVitrinaGlobal() {
+        const tbody = document.getElementById('tablaVitrinaBody');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4 fw-bold"><div class="spinner-border text-info mb-2"></div><br>Conectando con la Bóveda Central...</td></tr>';
+        
         new bootstrap.Modal(document.getElementById('modalVitrinaGlobal')).show();
-        // Aquí conectaremos con el VPS en el siguiente paso
+
+        const formData = new FormData();
+        formData.append('action', 'listar_catalogo_global'); // 👈 Llama a la función que ya pusimos en el VPS
+        formData.append('ajax', 'true');
+        formData.append('empresa_id', localStorage.getItem('pos_empresa_id'));
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        try {
+            // Llama a tu puente local
+            const res = await fetch('/compras/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                productosVitrina = data.productos;
+                renderizarVitrina(productosVitrina);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4 fw-bold">${data.message}</td></tr>`;
+            }
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4 fw-bold">Error de conexión con el Servidor Central.</td></tr>`;
+        }
     }
+
+    function renderizarVitrina(lista) {
+        const tbody = document.getElementById('tablaVitrinaBody');
+        tbody.innerHTML = '';
+
+        if (lista.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4 fw-bold">El catálogo central está vacío.</td></tr>';
+            return;
+        }
+
+        lista.forEach(p => {
+            const iconFoto = p.tiene_imagen 
+                ? '<i class="bi bi-image-fill text-brand-blue fs-5"></i>' 
+                : '<i class="bi bi-image text-secondary opacity-25 fs-5"></i>';
+            
+            // 🤖 EL BOTÓN INTELIGENTE (Detecta si ya lo tiene o no)
+            let btnHtml = '';
+            if (p.ya_importado) {
+                btnHtml = `<button class="btn btn-sm btn-secondary fw-bold border-0 disabled"><i class="bi bi-check-all me-1"></i>Importado</button>`;
+            } else {
+                btnHtml = `<button class="btn btn-sm btn-brand-blue text-dark fw-bold border-0" onclick="importarProductoCentral('${p.id}')"><i class="bi bi-cloud-download-fill me-1"></i>Importar</button>`;
+            }
+
+            tbody.innerHTML += `
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td class="text-center">${iconFoto}</td>
+                    <td class="fw-bold text-white">${p.nombre}</td>
+                    <td class="text-muted small"><i class="bi bi-upc me-1"></i>${p.codigo_barras || 'N/A'}</td>
+                    <td class="text-center" id="td-btn-vitrina-${p.id}">
+                        ${btnHtml}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    // Buscador en vivo del modal
+    document.getElementById('buscadorVitrina').addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        if (query === '') {
+            renderizarVitrina(productosVitrina);
+        } else {
+            const filtrados = productosVitrina.filter(p => p.nombre.toLowerCase().includes(query) || (p.codigo_barras && p.codigo_barras.toLowerCase().includes(query)));
+            renderizarVitrina(filtrados);
+        }
+    });
 
     
 </script>

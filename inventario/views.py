@@ -496,6 +496,54 @@ def gestionar_compras(request):
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al editar: {str(e)}'})
 
+        # ========================================================
+        # 🌍 PUENTES PARA EL CATÁLOGO GLOBAL (VITRINA Y DESCARGA)
+        # ========================================================
+        elif action == 'listar_catalogo_global':
+            datos_maestro = {
+                'accion': 'listar_catalogo_global', 
+                'empresa_id': request.POST.get('empresa_id')
+            }
+            try:
+                # Usamos URL_MAESTRO que ya definiste al inicio del archivo
+                respuesta = requests.post(f"{URL_MAESTRO}/api/interno/control_superior/", data=datos_maestro, timeout=10)
+                return JsonResponse(respuesta.json())
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f'No se pudo conectar a la Bóveda Central: {str(e)}'})
+
+        elif action == 'importar_producto_central':
+            producto_id = request.POST.get('producto_id')
+            datos_maestro = {
+                'accion': 'importar_producto_global',
+                'producto_id': producto_id,
+                'empresa_id': request.POST.get('empresa_id')
+            }
+            try:
+                # 1. Mandamos la orden al VPS (MySQL)
+                respuesta = requests.post(f"{URL_MAESTRO}/api/interno/control_superior/", data=datos_maestro, timeout=10)
+                data_maestro = respuesta.json()
+                
+                # 2. 🚀 MAGIA: Si el VPS nos da luz verde, lo guardamos en el FIREBASE local de la caja
+                if data_maestro.get('status') == 'success':
+                    prod_nube = data_maestro.get('nuevo_producto', {})
+                    if prod_nube:
+                        # Lo guardamos en Firebase usando el MISMO ID numérico del VPS como nombre del documento
+                        db.collection('productos').document(str(prod_nube['id'])).set({
+                            'nombre': prod_nube['nombre'],
+                            'codigo_barras': prod_nube.get('codigo_barras', ''),
+                            'venta_granel': prod_nube.get('venta_granel', False),
+                            'precio': 0.00,
+                            'volumen_precio': 0.00,
+                            'tiene_imagen': prod_nube.get('imagen', False),
+                            'ventas_mes': 0,
+                            'stock_infinito': True,
+                            'fecha_creacion': firestore.SERVER_TIMESTAMP
+                        })
+                return JsonResponse(data_maestro)
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f'No se pudo importar: {str(e)}'})
+
+        # --- AQUÍ CONTINÚA TU CÓDIGO ORIGINAL ---
         if not is_ajax: return redirect('gestionar_compras')
 
     # --- RENDERIZADO INICIAL ---
