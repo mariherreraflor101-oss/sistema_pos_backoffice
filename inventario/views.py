@@ -651,5 +651,12 @@ def api_registrar_compra_app(request):
 def login_pos(request):
     return render(request, 'login.html')
 
+# ==========================================================
+# 👑 NUEVO: PANEL DE AUTORIDAD SUPREMA (DUEÑO / CEO)
+# ==========================================================
+def panel_ceo(request):
+    # La seguridad de sesión (si es CEO o no) ya está blindada 
+    # por tu JavaScript en el Frontend. Si pasa la prueba, cargamos la vista.
+    return render(request, 'panel_ceo.html')
 
 

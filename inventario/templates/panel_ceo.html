@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel CEO - Matriz de Autoridad</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --bg-main: #0A0E17;          
+            --bg-card: #161B29;          
+            --accent-orange: #FF6600;    
+            --accent-blue: #00D5FF;      
+            --text-primary: #FFFFFF;     
+            --text-secondary: #94A3B8;   
+            --green-success: #34D399;    
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        body { background-color: var(--bg-main); color: var(--text-primary); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        .sidebar { background-color: var(--bg-card); min-height: 100vh; border-right: 1px solid var(--border-color); }
+        .sidebar-link { color: var(--text-secondary); text-decoration: none; padding: 12px 20px; display: block; border-radius: 8px; margin-bottom: 5px; font-weight: 500; transition: 0.3s; cursor: pointer;}
+        .sidebar-link.active { background-color: rgba(255, 102, 0, 0.1); color: var(--accent-orange); border-left: 3px solid var(--accent-orange); }
+        
+        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        
+        .text-brand-blue { color: var(--accent-blue) !important; }
+        .text-brand-orange { color: var(--accent-orange) !important; } 
+        .text-brand-green { color: var(--green-success) !important; } 
+
+        .btn-brand-orange { background-color: var(--accent-orange); color: #000; border: none; border-radius: 10px; font-weight: bold; padding: 10px 20px; transition: 0.3s; box-shadow: 0 4px 14px rgba(255, 102, 0, 0.3); }
+        .btn-brand-orange:hover { background-color: #ff7722; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255, 102, 0, 0.5); }
+
+        /* Interruptores personalizados */
+        .form-switch .form-check-input { width: 3rem; height: 1.5rem; cursor: pointer; border: none; background-color: #4A5568; }
+        .form-switch .form-check-input:checked { background-color: var(--accent-orange); } 
+
+        .toast { background-color: #151A2E; border-left: 5px solid; }
+    </style>
+</head>
+<body>
+
+<!-- BLINDAJE DE SEGURIDAD FRONTEND -->
+<script>
+    if(localStorage.getItem('pos_logueado') !== 'true' || localStorage.getItem('pos_rol') !== 'Dueño / CEO') {
+        alert("⛔ ACCESO DENEGADO. Nivel de autoridad insuficiente.");
+        window.location.href = "/login/"; 
+    }
+</script>
+
+<div class="toast-container position-fixed top-0 end-0 p-4" style="z-index: 1055">
+    <div id="liveToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-bold" id="toastMessage"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex">
+    <!-- MENÚ LATERAL CEO -->
+    <div class="sidebar p-3" style="width: 250px;">
+        <h4 class="mb-4 text-center mt-2 fw-bold text-white"><i class="bi bi-shield-check text-brand-orange"></i> Portal CEO</h4>
+        <a class="sidebar-link active">
+            <i class="bi bi-diagram-3-fill me-2"></i> Matriz de Autoridad
+        </a>
+        <a href="{% url 'gestionar_compras' %}" class="sidebar-link mt-4" style="border: 1px dashed rgba(255,255,255,0.2);">
+            <i class="bi bi-shop me-2"></i> Ir a la Caja (POS)
+        </a>
+        <a href="#" class="sidebar-link text-danger mt-2" onclick="cerrarSesionCEO()">
+            <i class="bi bi-box-arrow-left me-2"></i> Cerrar Sesión
+        </a>
+    </div>
+
+    <!-- ÁREA DE TRABAJO -->
+    <div class="flex-grow-1 p-4">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="fw-bold mb-0 text-brand-orange"><i class="bi bi-shield-lock-fill me-2"></i>Matriz de Autoridad Suprema</h3>
+                <p class="text-muted mb-0">Define exactamente qué módulos y acciones puede realizar cada rol en el sistema multi-tenant.</p>
+            </div>
+            <div>
+                <span class="badge bg-dark border border-secondary p-2 text-white fs-6">
+                    <i class="bi bi-person-circle text-brand-orange me-2"></i>Dueño / CEO
+                </span>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- SELECTOR DE ROLES -->
+            <div class="col-md-4 mb-4">
+                <div class="card p-3 h-100" style="border: 1px solid var(--accent-orange);">
+                    <label class="form-label text-white fw-bold mb-3"><i class="bi bi-1-circle-fill me-2 text-brand-orange"></i>Selecciona el Rol:</label>
+                    <div class="list-group" id="listaRoles">
+                        <button type="button" class="list-group-item list-group-item-action active fw-bold" style="background-color: var(--accent-orange); color: black; border: none;" onclick="seleccionarRol('Socio Inversor', this)">Socio Inversor</button>
+                        <button type="button" class="list-group-item list-group-item-action bg-transparent text-white border-secondary" onclick="seleccionarRol('encargada', this)">Encargada de Tienda</button>
+                        <button type="button" class="list-group-item list-group-item-action bg-transparent text-white border-secondary" onclick="seleccionarRol('cajero', this)">Cajero(a)</button>
+                        <button type="button" class="list-group-item list-group-item-action bg-transparent text-white border-secondary" onclick="seleccionarRol('despachador', this)">Despachador</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLERO DE INTERRUPTORES -->
+            <div class="col-md-8 mb-4">
+                <div class="card p-4 h-100">
+                    <form id="formPermisos" onsubmit="guardarPermisos(event)">
+                        <input type="hidden" id="rolActual" value="Socio Inversor">
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-4 pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <h5 class="fw-bold text-white mb-0">Permisos para: <span id="tituloRolConfig" class="text-brand-orange text-uppercase">SOCIO INVERSOR</span></h5>
+                            <button type="submit" class="btn btn-brand-orange fw-bold" id="btnGuardar">
+                                <i class="bi bi-save-fill me-2"></i>Guardar Reglas
+                            </button>
+                        </div>
+
+                        <!-- MODULO: COMPRAS Y COSTOS -->
+                        <div class="mb-4">
+                            <h6 class="text-brand-blue fw-bold mb-3"><i class="bi bi-calculator-fill me-2"></i>Módulo: Costos y Compras</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                                <span class="text-white small">Permitir ingresar nuevas compras y stock al local</span>
+                                <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_ingresar_compras" checked></div>
+                            </div>
+                        </div>
+
+                        <!-- MODULO: REGISTRO FINANCIERO -->
+                        <div class="mb-4">
+                            <h6 class="text-brand-green fw-bold mb-3"><i class="bi bi-receipt-cutoff me-2"></i>Módulo: Registro Financiero</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                                <span class="text-white small">Ver ganancias netas, inversión y reportes</span>
+                                <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_ver_finanzas" checked></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                                <span class="text-white small fw-bold text-danger">Permitir anular/borrar compras del historial</span>
+                                <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_anular_compras" checked></div>
+                            </div>
+                        </div>
+
+                        <!-- MODULO: CATÁLOGO MAESTRO -->
+                        <div class="mb-4">
+                            <h6 class="text-white fw-bold mb-3"><i class="bi bi-journal-text me-2"></i>Módulo: Catálogo Maestro</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                                <span class="text-white small">Permitir crear productos nuevos</span>
+                                <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_crear_productos" checked></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                                <span class="text-white small">Permitir modificar precios de venta al público</span>
+                                <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_editar_precios" checked></div>
+                            </div>
+                        </div>
+
+                        <!-- MODULO: CONTROL SUPERIOR -->
+                        <div>
+                            <h6 class="text-brand-orange fw-bold mb-3"><i class="bi bi-people-fill me-2"></i>Módulo: Gestión de Personal</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                                <span class="text-white small">Permitir crear y bloquear cajeros/encargadas de su local</span>
+                                <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_gestionar_personal" checked></div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function mostrarToast(mensaje, tipo) {
+        const toastEl = document.getElementById('liveToast');
+        toastEl.classList.remove('border-success', 'border-danger', 'border-info');
+        toastEl.style.borderLeftColor = tipo === 'success' ? '#34D399' : (tipo === 'danger' ? '#F87171' : '#00D5FF');
+        document.getElementById('toastMessage').innerHTML = mensaje;
+        new bootstrap.Toast(toastEl).show();
+    }
+
+    function seleccionarRol(rol, boton) {
+        // Actualiza interfaz
+        document.getElementById('rolActual').value = rol;
+        document.getElementById('tituloRolConfig').innerText = rol;
+        
+        let botones = document.getElementById('listaRoles').children;
+        for(let i=0; i<botones.length; i++) {
+            botones[i].classList.remove('active');
+            botones[i].style.backgroundColor = 'transparent';
+            botones[i].style.color = 'white';
+        }
+        
+        boton.classList.add('active');
+        boton.style.backgroundColor = 'var(--accent-orange)';
+        boton.style.color = 'black';
+
+        // Llama a la base de datos para ver cómo están los interruptores
+        cargarPermisosDesdeServidor(rol);
+    }
+
+    async function cargarPermisosDesdeServidor(rol) {
+        // Aquí conectaremos con el VPS para leer los permisos guardados.
+        // Por ahora simulamos la recarga para dar la sensación fluida.
+        console.log("Cargando permisos para:", rol);
+        // Cuando tengas el modelo en Django, aquí haremos un fetch().
+    }
+
+    async function guardarPermisos(event) {
+        event.preventDefault();
+        const btn = document.getElementById('btnGuardar');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+        btn.disabled = true;
+
+        const rol = document.getElementById('rolActual').value;
+        const permisos = {
+            ingresar_compras: document.getElementById('perm_ingresar_compras').checked,
+            ver_finanzas: document.getElementById('perm_ver_finanzas').checked,
+            anular_compras: document.getElementById('perm_anular_compras').checked,
+            crear_productos: document.getElementById('perm_crear_productos').checked,
+            editar_precios: document.getElementById('perm_editar_precios').checked,
+            gestionar_personal: document.getElementById('perm_gestionar_personal').checked
+        };
+
+        console.log(`Enviando a VPS -> Rol: ${rol}`, permisos);
+
+        // Simulamos el tiempo de respuesta del servidor (1 segundo)
+        setTimeout(() => {
+            mostrarToast(`Permisos para ${rol} guardados con éxito en el servidor maestro.`, 'success');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }, 800);
+        
+        // 🚀 El siguiente paso será crear la vista en tu views.py para recibir esto.
+    }
+
+    function cerrarSesionCEO() {
+        localStorage.clear();
+        window.location.href = '/login/';
+    }
+</script>
+</body>
+</html>

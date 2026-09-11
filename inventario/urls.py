@@ -2,9 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Tu ruta actual para el panel web
+    # Rutas actuales para el panel web
     path('compras/', views.gestionar_compras, name='gestionar_compras'),
     path('login/', views.login_pos, name='login_pos'),
+    
+    # 👑 NUEVA RUTA PARA EL PANEL DEL DUEÑO / CEO
+    path('panel-ceo/', views.panel_ceo, name='panel_ceo'),
     
     # ==========================================
     # RUTAS PARA LA APLICACIÓN FLUTTER
