@@ -157,9 +157,16 @@
                     <h5 class="fw-bold text-brand-blue mb-0 text-uppercase" style="font-size: 13px; letter-spacing: 0.5px;">
                         <i class="bi bi-search me-2"></i>Añadir Producto al Lote
                     </h5>
-                    <button type="button" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
-                        <i class="bi bi-plus-circle-fill me-2"></i>Agregar Nuevo
-                    </button>
+                    <!-- 📥 NUEVO: Agrupamos los botones -->
+                    <div class="d-flex gap-2">
+                        <button id="btnImportarCentral" class="btn btn-outline-info fw-bold border-2" style="display: none;" onclick="abrirVitrinaGlobal()">
+                            <i class="bi bi-cloud-download-fill me-2"></i>Importar de la Central
+                        </button>
+                        
+                        <button type="button" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
+                            <i class="bi bi-plus-circle-fill me-2"></i>Agregar Nuevo
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="position-relative">
@@ -649,6 +656,42 @@
 
 
 
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- 📥 MODAL: VITRINA DEL CATÁLOGO GLOBAL (SOLO SOCIOS) -->
+<!-- ========================================================= -->
+<div class="modal fade" id="modalVitrinaGlobal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--accent-blue); box-shadow: 0 0 20px rgba(0, 213, 255, 0.2);">
+            <div class="modal-header border-0" style="background-color: rgba(0, 213, 255, 0.05);">
+                <h5 class="modal-title fw-bold text-brand-blue"><i class="bi bi-shop me-2"></i>Catálogo Central de la Franquicia</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="buscadorVitrina" class="form-control bg-dark text-white border-secondary" placeholder="🔍 Buscar producto en la central...">
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table align-middle text-white mb-0">
+                        <thead class="table-custom-header text-muted">
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Producto Oficial</th>
+                                <th>Código Barras</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaVitrinaBody">
+                            <tr><td colspan="4" class="text-center text-muted py-4 fw-bold">Cargando catálogo central...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2382,19 +2425,29 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         cargarFiltroSubcategorias(); 
         
         // =======================================================
-        // 👑 VALIDACIÓN DE CEO PARA LOS INTERRUPTORES GLOBALES
+        // 👑 VALIDACIÓN DE ROLES: CEO vs SOCIOS
         // =======================================================
-        if(localStorage.getItem('pos_rol') === 'Dueño / CEO') {
-            
-            // 1. Enciende el interruptor en el Modal de "Agregar Nuevo"
+        const rolActual = localStorage.getItem('pos_rol');
+
+        if(rolActual === 'Dueño / CEO') {
+            // El CEO ve los interruptores para hacer productos globales
             const bloqueGlobal = document.getElementById('bloqueGlobalCEO');
             if (bloqueGlobal) bloqueGlobal.style.display = 'block';
 
-            // 2. Enciende el interruptor en el Modal de "Editar Producto"
             const bloqueEditGlobal = document.getElementById('bloqueEditGlobalCEO');
             if (bloqueEditGlobal) bloqueEditGlobal.style.display = 'block';
+        } else {
+            // LOS SOCIOS ven el botón de descargar de la central
+            const btnImportar = document.getElementById('btnImportarCentral');
+            if (btnImportar) btnImportar.style.display = 'block';
         }
     });
+
+    // Función para abrir la Vitrina
+    function abrirVitrinaGlobal() {
+        new bootstrap.Modal(document.getElementById('modalVitrinaGlobal')).show();
+        // Aquí conectaremos con el VPS en el siguiente paso
+    }
 
     
 </script>
