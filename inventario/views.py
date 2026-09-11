@@ -428,6 +428,10 @@ def gestionar_compras(request):
                 nombre = request.POST.get('editar_nombre', '').strip().upper()
                 codigo_barras = request.POST.get('editar_codigo_barras', '').strip()
                 es_granel = request.POST.get('editar_es_granel') == 'on'
+                
+                # 🌍 NUEVO: Atrapamos el interruptor del formulario HTML
+                es_global = request.POST.get('editar_es_global') == 'on'
+                
                 categoria_id = request.POST.get('editar_categoria_id')
                 subcategoria_id = request.POST.get('editar_subcategoria_id') # 🔴 NUEVO
                 precio_menor = to_float(request.POST.get('editar_precio_menor'))
@@ -452,6 +456,7 @@ def gestionar_compras(request):
                     'subcategoria_id': subcategoria_id,
                     'empresa_id': empresa_id,
                     'venta_granel': 'true' if es_granel else 'false', # 🚀 INYECCIÓN AL EDITAR
+                    'es_global': 'true' if es_global else 'false',    # 🌍 INYECTAMOS LA SEÑAL AL EDITAR
                 }
                 
                 archivos = {}

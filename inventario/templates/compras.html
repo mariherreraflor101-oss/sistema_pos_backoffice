@@ -788,6 +788,9 @@
                                 </select>
                             </div>
                         </div>
+
+
+
                         <div class="col-6">
                             <label class="form-label text-white small fw-bold">Subcategoría</label>
                             <div class="input-group">
@@ -795,6 +798,19 @@
                                 <select name="editar_subcategoria_id" id="editCatSubcategoria" class="form-select text-white">
                                     <option value="" disabled selected>Elige categoría...</option>
                                 </select>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- 🌍 NUEVO: INTERRUPTOR GLOBAL EN EDICIÓN (SOLO CEO) -->
+                    <div id="bloqueEditGlobalCEO" class="mb-4 p-3 rounded" style="display: none; background-color: rgba(255, 102, 0, 0.05); border: 1px solid var(--accent-orange);">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-check-label text-brand-orange small fw-bold" for="editSwitchGlobalCEO">
+                                <i class="bi bi-globe-americas me-1"></i> Catálogo Global (Convertir para todos)
+                            </label>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" name="editar_es_global" id="editSwitchGlobalCEO">
                             </div>
                         </div>
                     </div>
@@ -2361,15 +2377,26 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
     
 
     document.addEventListener('DOMContentLoaded', () => {
+        // Aquí seguramente tienes tus funciones normales de carga
         cargarCategoriasOficiales();
         cargarFiltroSubcategorias(); 
         
-        // 🚀 NUEVO: Mostrar el botón global solo si es CEO
+        // =======================================================
+        // 👑 VALIDACIÓN DE CEO PARA LOS INTERRUPTORES GLOBALES
+        // =======================================================
         if(localStorage.getItem('pos_rol') === 'Dueño / CEO') {
+            
+            // 1. Enciende el interruptor en el Modal de "Agregar Nuevo"
             const bloqueGlobal = document.getElementById('bloqueGlobalCEO');
             if (bloqueGlobal) bloqueGlobal.style.display = 'block';
+
+            // 2. Enciende el interruptor en el Modal de "Editar Producto"
+            const bloqueEditGlobal = document.getElementById('bloqueEditGlobalCEO');
+            if (bloqueEditGlobal) bloqueEditGlobal.style.display = 'block';
         }
     });
+
+    
 </script>
 </body>
 </html>
