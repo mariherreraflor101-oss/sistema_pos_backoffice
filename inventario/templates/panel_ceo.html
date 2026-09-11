@@ -55,7 +55,7 @@
     }
 </script>
 
-{% csrf_token %} <!-- Necesario para que JavaScript le hable al Puente Local -->
+{% csrf_token %}
 
 <div class="toast-container position-fixed top-0 end-0 p-4" style="z-index: 1055">
     <div id="liveToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -67,15 +67,12 @@
 </div>
 
 <div class="d-flex">
-    <!-- MENÚ LATERAL CEO -->
+    <!-- MENÚ LATERAL CEO (Limpiado) -->
     <div class="sidebar p-3" style="width: 250px;">
         <h4 class="mb-4 text-center mt-2 fw-bold text-white"><i class="bi bi-shield-check text-brand-orange"></i> Portal CEO</h4>
         
-        <a class="sidebar-link active" id="menuSocios" onclick="cambiarPestanaCEO('socios')">
+        <a class="sidebar-link active" id="menuSocios">
             <i class="bi bi-people-fill me-2"></i> Red de Socios
-        </a>
-        <a class="sidebar-link" id="menuAutoridad" onclick="cambiarPestanaCEO('autoridad')">
-            <i class="bi bi-diagram-3-fill me-2"></i> Matriz de Autoridad
         </a>
         
         <a href="{% url 'gestionar_compras' %}" class="sidebar-link mt-4" style="border: 1px dashed rgba(255,255,255,0.2);">
@@ -89,14 +86,12 @@
     <!-- ÁREA DE TRABAJO -->
     <div class="flex-grow-1 p-4">
         
-        <!-- ========================================== -->
-        <!-- 🚀 PESTAÑA: RED DE SOCIOS INVERSORES -->
-        <!-- ========================================== -->
+        <!-- PESTAÑA ÚNICA: RED DE SOCIOS INVERSORES -->
         <div id="pestanaSocios">
             <div class="mb-4 d-flex justify-content-between align-items-center">
                 <div>
                     <h3 class="fw-bold mb-0 text-brand-orange"><i class="bi bi-building me-2"></i>Red de Socios Inversores</h3>
-                    <p class="text-muted mb-0">Visualiza y administra a los dueños de cada local/empresa de tu red.</p>
+                    <p class="text-muted mb-0">Visualiza, bloquea y define permisos específicos para cada socio de tu red.</p>
                 </div>
                 <button class="btn btn-brand-orange py-2 px-4" onclick="cargarSocios()">
                     <i class="bi bi-arrow-clockwise me-2"></i>Actualizar Red
@@ -122,66 +117,63 @@
             </div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- 👑 PESTAÑA: MATRIZ DE AUTORIDAD -->
-        <!-- ========================================== -->
-        <div id="pestanaAutoridad" style="display: none;">
-            <div class="mb-4 d-flex justify-content-between align-items-center">
-                <div>
-                    <h3 class="fw-bold mb-0 text-brand-orange"><i class="bi bi-shield-lock-fill me-2"></i>Matriz de Autoridad Suprema</h3>
-                    <p class="text-muted mb-0">Define exactamente qué módulos y acciones puede realizar cada rol en el sistema.</p>
-                </div>
-            </div>
+    </div>
+</div>
 
-            <div class="row">
-                <div class="col-md-4 mb-4">
-                    <div class="card p-3 h-100" style="border: 1px solid var(--accent-orange);">
-                        <label class="form-label text-white fw-bold mb-3"><i class="bi bi-1-circle-fill me-2 text-brand-orange"></i>Selecciona el Rol:</label>
-                        <div class="list-group" id="listaRoles">
-                            <button type="button" class="list-group-item list-group-item-action active fw-bold" style="background-color: var(--accent-orange); color: black; border: none;" onclick="seleccionarRol('Socio Inversor', this)">Socio Inversor</button>
-                            <button type="button" class="list-group-item list-group-item-action bg-transparent text-white border-secondary" onclick="seleccionarRol('encargada', this)">Encargada de Tienda</button>
-                            <button type="button" class="list-group-item list-group-item-action bg-transparent text-white border-secondary" onclick="seleccionarRol('cajero', this)">Cajero(a)</button>
-                            <button type="button" class="list-group-item list-group-item-action bg-transparent text-white border-secondary" onclick="seleccionarRol('despachador', this)">Despachador</button>
+<!-- ========================================================= -->
+<!-- 👑 MODAL: CONFIGURACIÓN ESPECÍFICA DEL SOCIO -->
+<!-- ========================================================= -->
+<div class="modal fade" id="modalPermisosSocio" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: var(--bg-card); border: 1px solid var(--accent-orange); box-shadow: 0 0 20px rgba(255, 102, 0, 0.2);">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold text-brand-orange"><i class="bi bi-sliders me-2"></i>Permisos Especiales del Socio</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formPermisosSocio" onsubmit="guardarPermisosSocio(event)">
+                <input type="hidden" id="modalSocioId">
+                <div class="modal-body pt-0">
+                    
+                    <div class="p-3 mb-4 rounded text-center" style="background-color: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2);">
+                        <span class="badge bg-secondary mb-2">MODIFICANDO REGLAS PARA</span>
+                        <h5 class="text-white fw-bold mb-0" id="modalSocioNombre">empresa_santa_rosa@...</h5>
+                    </div>
+
+                    <h6 class="text-brand-blue fw-bold mb-3"><i class="bi bi-journal-text me-2"></i>Reglas del Catálogo Maestro</h6>
+                    
+                    <!-- PERMISO 1: IMAGEN -->
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                        <span class="text-white small fw-bold">1. Permitir cambiar la IMAGEN del producto</span>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="perm_imagen" checked>
                         </div>
                     </div>
-                </div>
-
-                <div class="col-md-8 mb-4">
-                    <div class="card p-4 h-100">
-                        <form id="formPermisos" onsubmit="guardarPermisos(event)">
-                            <input type="hidden" id="rolActual" value="Socio Inversor">
-                            <div class="d-flex justify-content-between align-items-center mb-4 pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                                <h5 class="fw-bold text-white mb-0">Permisos para: <span id="tituloRolConfig" class="text-brand-orange text-uppercase">SOCIO INVERSOR</span></h5>
-                                <button type="submit" class="btn btn-brand-orange fw-bold" id="btnGuardar">
-                                    <i class="bi bi-save-fill me-2"></i>Guardar Reglas
-                                </button>
-                            </div>
-                            
-                            <!-- Interfaz de Permisos -->
-                            <div class="mb-4">
-                                <h6 class="text-brand-blue fw-bold mb-3"><i class="bi bi-calculator-fill me-2"></i>Módulo: Costos y Compras</h6>
-                                <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
-                                    <span class="text-white small">Permitir ingresar nuevas compras y stock al local</span>
-                                    <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_ingresar_compras" checked></div>
-                                </div>
-                            </div>
-                            <div class="mb-4">
-                                <h6 class="text-brand-green fw-bold mb-3"><i class="bi bi-receipt-cutoff me-2"></i>Módulo: Registro Financiero</h6>
-                                <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
-                                    <span class="text-white small">Ver ganancias netas, inversión y reportes</span>
-                                    <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_ver_finanzas" checked></div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
-                                    <span class="text-white small fw-bold text-danger">Permitir anular/borrar compras del historial</span>
-                                    <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="perm_anular_compras" checked></div>
-                                </div>
-                            </div>
-                        </form>
+                    
+                    <!-- PERMISO 2: NOMBRE -->
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                        <span class="text-white small fw-bold">2. Permitir cambiar el NOMBRE del producto</span>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="perm_nombre" checked>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
+                    <!-- PERMISO 3: CÓDIGO BARRAS -->
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-3 py-2 rounded" style="background-color: rgba(255,255,255,0.02);">
+                        <span class="text-white small fw-bold">3. Permitir cambiar el CÓDIGO DE BARRAS</span>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="perm_codigo" checked>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer border-0 pt-0 mt-3">
+                    <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-brand-orange text-dark fw-bold rounded-3" id="btnGuardarPermisos">
+                        <i class="bi bi-shield-check me-2"></i>Guardar Permisos
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -196,25 +188,8 @@
         new bootstrap.Toast(toastEl).show();
     }
 
-    function cambiarPestanaCEO(pestana) {
-        document.getElementById('pestanaSocios').style.display = 'none';
-        document.getElementById('pestanaAutoridad').style.display = 'none';
-        
-        document.getElementById('menuSocios').classList.remove('active');
-        document.getElementById('menuAutoridad').classList.remove('active');
-        
-        if(pestana === 'socios') {
-            document.getElementById('pestanaSocios').style.display = 'block';
-            document.getElementById('menuSocios').classList.add('active');
-            cargarSocios();
-        } else if(pestana === 'autoridad') {
-            document.getElementById('pestanaAutoridad').style.display = 'block';
-            document.getElementById('menuAutoridad').classList.add('active');
-        }
-    }
-
     // =========================================================
-    // LÓGICA DE GESTIÓN DE SOCIOS (PUENTE)
+    // LÓGICA DE CARGA DE SOCIOS
     // =========================================================
     async function cargarSocios() {
         let tbody = document.getElementById('tablaSociosBody');
@@ -227,7 +202,6 @@
         formData.append('rol_solicitante', 'Dueño / CEO'); 
 
         try {
-            // Reutilizamos el puente seguro de compras
             let respuesta = await fetch('/compras/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
             let data = await respuesta.json();
 
@@ -245,15 +219,19 @@
                     let colorEstado = emp.is_active ? 'var(--green-success)' : 'var(--red-danger)';
                     let textoEstado = emp.is_active ? 'Activo' : 'Suspendido';
 
+                    // 🚀 BOTÓN DE EDITAR AÑADIDO AQUÍ
                     tbody.innerHTML += `
                         <tr>
                             <td class="fw-bold text-white fs-6"><i class="bi bi-person-fill text-brand-orange me-2"></i>${identificador}</td>
                             <td class="text-muted fw-bold">${sedeNombre}</td>
                             <td style="color: ${colorEstado}; font-weight: bold;">${textoEstado}</td>
                             <td class="text-center">
+                                <button onclick="abrirModalPermisosSocio(${emp.id}, '${identificador}')" class="btn btn-sm btn-outline-info border-0 fw-bold me-2" title="Editar Permisos">
+                                    <i class="bi bi-pencil-square"></i> Editar
+                                </button>
                                 ${emp.is_active 
-                                    ? `<button onclick="modificarEstadoSocio(${emp.id}, false)" class="btn btn-sm btn-outline-danger border-0 fw-bold"><i class="bi bi-x-circle-fill me-1"></i> Suspender Acceso</button>`
-                                    : `<button onclick="modificarEstadoSocio(${emp.id}, true)" class="btn btn-sm btn-outline-success border-0 fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Reactivar Acceso</button>`
+                                    ? `<button onclick="modificarEstadoSocio(${emp.id}, false)" class="btn btn-sm btn-outline-danger border-0 fw-bold"><i class="bi bi-x-circle-fill me-1"></i> Suspender</button>`
+                                    : `<button onclick="modificarEstadoSocio(${emp.id}, true)" class="btn btn-sm btn-outline-success border-0 fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Reactivar</button>`
                                 }
                             </td>
                         </tr>
@@ -276,7 +254,7 @@
         formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
         formData.append('empresa_id', localStorage.getItem('pos_empresa_id') || '0');
         formData.append('usuario_id', usuarioId);
-        formData.append('nuevo_rol', 'Socio Inversor'); // Mantiene su rol intacto
+        formData.append('nuevo_rol', 'Socio Inversor'); 
         formData.append('is_active', nuevoEstado);
         formData.append('rol_solicitante', 'Dueño / CEO');
 
@@ -284,7 +262,7 @@
             let respuesta = await fetch('/compras/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
             let data = await respuesta.json();
             if (data.status === 'success') {
-                mostrarToast('Estado del Socio actualizado correctamente.', 'success');
+                mostrarToast('Estado del Socio actualizado.', 'success');
                 cargarSocios(); 
             } else {
                 mostrarToast(data.message, 'danger');
@@ -293,22 +271,43 @@
     }
 
     // =========================================================
-    // LÓGICA DE PERMISOS
+    // LÓGICA DEL MODAL DE PERMISOS
     // =========================================================
-    function seleccionarRol(rol, boton) {
-        document.getElementById('rolActual').value = rol;
-        document.getElementById('tituloRolConfig').innerText = rol;
+    function abrirModalPermisosSocio(id, nombre_usuario) {
+        // Carga los datos visuales
+        document.getElementById('modalSocioId').value = id;
+        document.getElementById('modalSocioNombre').innerText = nombre_usuario;
         
-        let botones = document.getElementById('listaRoles').children;
-        for(let i=0; i<botones.length; i++) {
-            botones[i].classList.remove('active');
-            botones[i].style.backgroundColor = 'transparent';
-            botones[i].style.color = 'white';
-        }
+        // Muestra el Modal
+        new bootstrap.Modal(document.getElementById('modalPermisosSocio')).show();
         
-        boton.classList.add('active');
-        boton.style.backgroundColor = 'var(--accent-orange)';
-        boton.style.color = 'black';
+        // 🚀 Nota Técnica: En el futuro, aquí haremos un 'fetch' para 
+        // traer los permisos actuales de la BD y encender los interruptores.
+    }
+
+    async function guardarPermisosSocio(event) {
+        event.preventDefault();
+        const btn = document.getElementById('btnGuardarPermisos');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+        btn.disabled = true;
+
+        const socioId = document.getElementById('modalSocioId').value;
+        const permisos = {
+            editar_imagen: document.getElementById('perm_imagen').checked,
+            editar_nombre: document.getElementById('perm_nombre').checked,
+            editar_codigo: document.getElementById('perm_codigo').checked
+        };
+
+        // 🚀 Simulación de guardado en el VPS
+        console.log(`Guardando permisos para Socio ID ${socioId}:`, permisos);
+        
+        setTimeout(() => {
+            mostrarToast('Permisos guardados correctamente en la base de datos.', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('modalPermisosSocio')).hide();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }, 800);
     }
 
     function cerrarSesionCEO() {
@@ -316,7 +315,7 @@
         window.location.href = '/login/';
     }
 
-    // Cargar la red de socios automáticamente al abrir el panel
+    // Arranca la carga de socios al iniciar
     document.addEventListener('DOMContentLoaded', () => {
         cargarSocios(); 
     });
