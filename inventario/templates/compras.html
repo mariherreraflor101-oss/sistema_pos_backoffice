@@ -130,7 +130,14 @@
 
 <div class="d-flex">
     <div class="sidebar p-3" style="width: 250px;">
-        <h4 class="mb-4 text-center mt-2 fw-bold text-white"><i class="bi bi-cart-check text-brand-orange"></i> POS Admin</h4>
+        <!-- 👤 PANEL DE IDENTIDAD DINÁMICO -->
+        <div class="text-center mb-4 mt-2 pb-3" style="border-bottom: 1px solid var(--border-color);">
+            <h4 class="fw-bold text-white mb-2"><i class="bi bi-cart-check text-brand-orange"></i> POS Admin</h4>
+            <div id="etiquetaRol" class="badge mb-2 px-3 py-2" style="font-size: 0.75rem; border-radius: 8px;">
+                <span class="spinner-border spinner-border-sm" style="width: 10px; height: 10px;"></span>
+            </div>
+            <div id="etiquetaCorreo" class="text-muted fw-bold" style="font-size: 0.7rem; word-break: break-all;"></div>
+        </div>
         <a class="sidebar-link active" id="menuCostos" onclick="cambiarPestana('costos')">
             <i class="bi bi-calculator-fill me-2"></i> Costos y Compras
         </a>
@@ -2429,26 +2436,52 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         cargarFiltroSubcategorias(); 
         
         // =======================================================
-        // 👑 VALIDACIÓN DE ROLES: CEO vs SOCIOS
+        // 👑 VALIDACIÓN DE ROLES E IDENTIDAD: CEO vs SOCIOS
         // =======================================================
         const rolActual = localStorage.getItem('pos_rol');
+        
+        // 🚀 Leemos el correo/nombre guardado en tu login.html
+        const correoUsuario = localStorage.getItem('pos_nombre_usuario') || localStorage.getItem('pos_usuario') || 'Usuario'; 
+
+        const etiquetaRol = document.getElementById('etiquetaRol');
+        const etiquetaCorreo = document.getElementById('etiquetaCorreo');
 
         if(rolActual === 'Dueño / CEO') {
-            // El CEO ve los interruptores para hacer productos globales
+            // 🎨 Diseño visual VIP para el CEO (Naranja)
+            if(etiquetaRol) {
+                etiquetaRol.style.backgroundColor = 'rgba(255, 102, 0, 0.1)';
+                etiquetaRol.style.color = 'var(--accent-orange)';
+                etiquetaRol.style.border = '1px solid var(--accent-orange)';
+                etiquetaRol.innerHTML = '<i class="bi bi-star-fill me-1"></i> Bienvenido, Dueño / CEO';
+            }
+            
+            // Permisos de CEO
             const bloqueGlobal = document.getElementById('bloqueGlobalCEO');
             if (bloqueGlobal) bloqueGlobal.style.display = 'block';
 
             const bloqueEditGlobal = document.getElementById('bloqueEditGlobalCEO');
             if (bloqueEditGlobal) bloqueEditGlobal.style.display = 'block';
             
-            // 🚀 NUEVO: Mostramos el acceso rápido al Portal CEO
             const btnPanelCEO = document.getElementById('btnIrPanelCEO');
             if (btnPanelCEO) btnPanelCEO.style.display = 'block';
             
         } else {
-            // LOS SOCIOS ven el botón de descargar de la central
+            // 🎨 Diseño visual para el SOCIO (Azul)
+            if(etiquetaRol) {
+                etiquetaRol.style.backgroundColor = 'rgba(0, 213, 255, 0.1)';
+                etiquetaRol.style.color = 'var(--accent-blue)';
+                etiquetaRol.style.border = '1px solid var(--accent-blue)';
+                etiquetaRol.innerHTML = '<i class="bi bi-shop me-1"></i> Bienvenido, Socio';
+            }
+
+            // Permisos de SOCIOS
             const btnImportar = document.getElementById('btnImportarCentral');
             if (btnImportar) btnImportar.style.display = 'block';
+        }
+
+        // Imprimimos el correo/nombre debajo de la etiqueta
+        if(etiquetaCorreo) {
+            etiquetaCorreo.innerHTML = `<i class="bi bi-person-circle me-1"></i> ${correoUsuario}`;
         }
     });
 
