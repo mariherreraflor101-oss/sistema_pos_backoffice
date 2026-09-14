@@ -114,13 +114,14 @@ def gestionar_compras(request):
                 
                 datos_mysql = {
                     'nombre': nombre,
+                    'codigo_barras': codigo_barras, # 🚀 NUEVO: Lo enviamos a la nube
                     'precio_final': precio_menor,
                     'precio_antiguo': 0, 
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
                     'empresa_id': empresa_id,
                     'venta_granel': 'true' if es_granel else 'false',
-                    'es_global': 'true' if es_global else 'false', # 🌍 INYECTAMOS LA ORDEN GLOBAL
+                    'es_global': 'true' if es_global else 'false',
                 }
                 
                 try:
@@ -452,14 +453,15 @@ def gestionar_compras(request):
                 
                 datos_mysql = {
                     'nombre': nombre,
-                    'nombre_antiguo': nombre_antiguo, # 🚀 El rastreador anti-duplicados
+                    'nombre_antiguo': nombre_antiguo, 
+                    'codigo_barras': codigo_barras, # 🚀 NUEVO: Lo enviamos a la nube
                     'precio_final': precio_menor,
                     'precio_antiguo': precio_antiguo,
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
                     'empresa_id': empresa_id,
-                    'venta_granel': 'true' if es_granel else 'false', # 🚀 INYECCIÓN AL EDITAR
-                    'es_global': 'true' if es_global else 'false',    # 🌍 INYECTAMOS LA SEÑAL AL EDITAR
+                    'venta_granel': 'true' if es_granel else 'false', 
+                    'es_global': 'true' if es_global else 'false',    
                 }
                 
                 archivos = {}
@@ -553,6 +555,8 @@ def gestionar_compras(request):
                     return JsonResponse({'status': 'error', 'message': f'Error del Servidor Central: Código {respuesta.status_code}'})
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': f'No se pudo importar: {str(e)}'})
+
+            
         # --- AQUÍ CONTINÚA TU CÓDIGO ORIGINAL ---
         if not is_ajax: return redirect('gestionar_compras')
 
