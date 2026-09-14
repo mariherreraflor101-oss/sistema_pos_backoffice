@@ -247,19 +247,22 @@ def gestionar_compras(request):
                     })
                     
                     # ==========================================================
-                    # 🚀 NUEVO: ENVIAR EL PRECIO ACTUALIZADO AL SUBDOMINIO
+                    # 🚀 NUEVO: SINCRONIZACIÓN QUIRÚRGICA EN TIEMPO REAL A LA APP
                     # ==========================================================
                     empresa_id = request.POST.get('empresa_id')
                     if empresa_id:
                         try:
                             datos_sincronizacion = {
+                                'accion': 'sincronizar_precios_calculadora', # 👈 Comando inteligente
                                 'nombre': p.get('nombre'),
                                 'precio_final': precio_menor,
                                 'empresa_id': empresa_id,
                             }
-                            requests.post(f"{URL_MAESTRO}/api/interno/recibir_producto/", data=datos_sincronizacion, timeout=3)
+                            # 🚀 CORRECCIÓN: Apuntamos al puente de control-superior
+                            requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data=datos_sincronizacion, timeout=3)
                         except Exception as e:
                             print(f"⚠️ Error sincronizando precio del lote para {p.get('nombre')}:", e)
+
 
                 if len(bonos_externos) > 0:
                     for b in bonos_externos:
@@ -505,11 +508,16 @@ def gestionar_compras(request):
                 'empresa_id': request.POST.get('empresa_id')
             }
             try:
-                # Usamos URL_MAESTRO que ya definiste al inicio del archivo
-                respuesta = requests.post(f"{URL_MAESTRO}/api/interno/control_superior/", data=datos_maestro, timeout=10)
-                return JsonResponse(respuesta.json())
+                # 🚀 CORRECCIÓN: El guion medio es vital (control-superior)
+                respuesta = requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data=datos_maestro, timeout=10)
+                
+                # 🛡️ Escudo Anti-Crasheos: Verificamos que el VPS haya respondido bien
+                if respuesta.status_code == 200:
+                    return JsonResponse(respuesta.json())
+                else:
+                    return JsonResponse({'status': 'error', 'message': f'Error del Servidor Central: Código {respuesta.status_code}'})
             except Exception as e:
-                return JsonResponse({'status': 'error', 'message': f'No se pudo conectar a la Bóveda Central: {str(e)}'})
+                return JsonResponse({'status': 'error', 'message': f'Fallo de conexión física: {str(e)}'})
 
         elif action == 'importar_producto_central':
             producto_id = request.POST.get('producto_id')
@@ -519,30 +527,32 @@ def gestionar_compras(request):
                 'empresa_id': request.POST.get('empresa_id')
             }
             try:
-                # 1. Mandamos la orden al VPS (MySQL)
-                respuesta = requests.post(f"{URL_MAESTRO}/api/interno/control_superior/", data=datos_maestro, timeout=10)
-                data_maestro = respuesta.json()
+                # 🚀 CORRECCIÓN: El guion medio es vital (control-superior)
+                respuesta = requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data=datos_maestro, timeout=10)
                 
-                # 2. 🚀 MAGIA: Si el VPS nos da luz verde, lo guardamos en el FIREBASE local de la caja
-                if data_maestro.get('status') == 'success':
-                    prod_nube = data_maestro.get('nuevo_producto', {})
-                    if prod_nube:
-                        # Lo guardamos en Firebase usando el MISMO ID numérico del VPS como nombre del documento
-                        db.collection('productos').document(str(prod_nube['id'])).set({
-                            'nombre': prod_nube['nombre'],
-                            'codigo_barras': prod_nube.get('codigo_barras', ''),
-                            'venta_granel': prod_nube.get('venta_granel', False),
-                            'precio': 0.00,
-                            'volumen_precio': 0.00,
-                            'tiene_imagen': prod_nube.get('imagen', False),
-                            'ventas_mes': 0,
-                            'stock_infinito': True,
-                            'fecha_creacion': firestore.SERVER_TIMESTAMP
-                        })
-                return JsonResponse(data_maestro)
+                if respuesta.status_code == 200:
+                    data_maestro = respuesta.json()
+                    
+                    if data_maestro.get('status') == 'success':
+                        prod_nube = data_maestro.get('nuevo_producto', {})
+                        if prod_nube:
+                            # Lo guardamos en el Firebase de la caja
+                            db.collection('productos').document(str(prod_nube['id'])).set({
+                                'nombre': prod_nube['nombre'],
+                                'codigo_barras': prod_nube.get('codigo_barras', ''),
+                                'venta_granel': prod_nube.get('venta_granel', False),
+                                'precio': 0.00,
+                                'volumen_precio': 0.00,
+                                'tiene_imagen': prod_nube.get('imagen', False),
+                                'ventas_mes': 0,
+                                'stock_infinito': True,
+                                'fecha_creacion': firestore.SERVER_TIMESTAMP
+                            })
+                    return JsonResponse(data_maestro)
+                else:
+                    return JsonResponse({'status': 'error', 'message': f'Error del Servidor Central: Código {respuesta.status_code}'})
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': f'No se pudo importar: {str(e)}'})
-
         # --- AQUÍ CONTINÚA TU CÓDIGO ORIGINAL ---
         if not is_ajax: return redirect('gestionar_compras')
 
