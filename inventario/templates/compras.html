@@ -2528,27 +2528,34 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
 
     function renderizarVitrina(lista) {
         const tbody = document.getElementById('tablaVitrinaBody');
-        tbody.innerHTML = '';
 
         if (lista.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4 fw-bold">El catálogo central está vacío.</td></tr>';
             return;
         }
 
-        lista.forEach(p => {
+        // 🚀 ESCUDO ANTI-LAG 1: Molde en memoria (Array) en lugar de inyectar 1 por 1
+        let htmlMemoria = [];
+
+        // 🚀 ESCUDO ANTI-LAG 2: Limitamos la vista de golpe a 150 para que el Scroll vuele. 
+        // ¡El buscador inteligente encontrará el resto al instante!
+        const limiteSeguro = 150;
+        const listaOptimizada = lista.slice(0, limiteSeguro);
+
+        listaOptimizada.forEach(p => {
             const iconFoto = p.tiene_imagen 
                 ? '<i class="bi bi-image-fill text-brand-blue fs-5"></i>' 
                 : '<i class="bi bi-image text-secondary opacity-25 fs-5"></i>';
             
-            // 🤖 EL BOTÓN INTELIGENTE (Detecta si ya lo tiene o no)
             let btnHtml = '';
             if (p.ya_importado) {
-                btnHtml = `<button class="btn btn-sm btn-secondary fw-bold border-0 disabled"><i class="bi bi-check-all me-1"></i>Importado</button>`;
+                btnHtml = `<button class="btn btn-sm btn-secondary fw-bold border-0 disabled" style="width: 100px;"><i class="bi bi-check-all me-1"></i>Importado</button>`;
             } else {
-                btnHtml = `<button class="btn btn-sm btn-brand-blue text-dark fw-bold border-0" onclick="importarProductoCentral('${p.id}')"><i class="bi bi-cloud-download-fill me-1"></i>Importar</button>`;
+                btnHtml = `<button class="btn btn-sm btn-brand-blue text-dark fw-bold border-0" style="width: 100px;" onclick="importarProductoCentral('${p.id}')"><i class="bi bi-cloud-download-fill me-1"></i>Importar</button>`;
             }
 
-            tbody.innerHTML += `
+            // Lo metemos al array de texto (memoria RAM pura, cero estrés gráfico)
+            htmlMemoria.push(`
                 <tr style="border-bottom: 1px solid var(--border-color);">
                     <td class="text-center">${iconFoto}</td>
                     <td class="fw-bold text-white">${p.nombre}</td>
@@ -2557,8 +2564,24 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
                         ${btnHtml}
                     </td>
                 </tr>
-            `;
+            `);
         });
+
+        // 💡 Aviso amigable si la bóveda tiene más de 150 productos ocultos
+        if (lista.length > limiteSeguro) {
+            htmlMemoria.push(`
+                <tr>
+                    <td colspan="4" class="text-center py-4 border-0">
+                        <span class="badge" style="background-color: rgba(0, 213, 255, 0.1); color: var(--accent-blue); padding: 10px 15px; border: 1px dashed var(--accent-blue); font-size: 0.85rem;">
+                            <i class="bi bi-info-circle me-1"></i> Hay ${lista.length - limiteSeguro} productos más en la nube. ¡Usa el buscador para verlos al instante!
+                        </span>
+                    </td>
+                </tr>
+            `);
+        }
+
+        // 🚀 MAGIA FINAL: Inyectamos todo el HTML de un solo golpe al navegador.
+        tbody.innerHTML = htmlMemoria.join('');
     }
 
     // Buscador en vivo del modal
