@@ -501,6 +501,36 @@ def gestionar_compras(request):
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al editar: {str(e)}'})
 
+
+        # ========================================================
+        # 👁️ PUENTE: OCULTAR/MOSTRAR PRODUCTO EN APP
+        # ========================================================
+        elif action == 'toggle_visibilidad_app':
+            try:
+                producto_id = request.POST.get('producto_id')
+                producto_nombre = request.POST.get('producto_nombre')
+                nuevo_estado = request.POST.get('estado') == 'true'
+                empresa_id = request.POST.get('empresa_id')
+
+                # 1. Guardar en el Firebase de la caja
+                if producto_id:
+                    db.collection('productos').document(producto_id).update({'activo': nuevo_estado})
+
+                # 2. Enviar el disparo de apagado al VPS
+                if empresa_id:
+                    try:
+                        requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                            'accion': 'toggle_visibilidad',
+                            'nombre': producto_nombre,
+                            'empresa_id': empresa_id,
+                            'estado': 'true' if nuevo_estado else 'false'
+                        }, timeout=3)
+                    except Exception as e:
+                        print("⚠️ Error VPS Toggle:", e)
+
+                if is_ajax: return JsonResponse({'status': 'success'})
+            except Exception as e:
+                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})
         # ========================================================
         # 🌍 PUENTES PARA EL CATÁLOGO GLOBAL (VITRINA Y DESCARGA)
         # ========================================================
@@ -587,7 +617,8 @@ def gestionar_compras(request):
             'volumen_cantidad_3': data.get('volumen_cantidad_3', ''),
             'volumen_precio_3': data.get('volumen_precio_3', ''),
             'venta_granel': data.get('venta_granel', False),
-            'imagen': data.get('tiene_imagen', False) # 🚀 ESTA ES LA LÍNEA QUE MANTIENE EL BRILLO
+            'imagen': data.get('tiene_imagen', False), 
+            'activo': data.get('activo', True) # 🚀 NUEVO: Leemos el estado
         })
     productos_json = json.dumps(lista_productos)
 

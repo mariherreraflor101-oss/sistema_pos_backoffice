@@ -181,7 +181,7 @@
                             <i class="bi bi-cloud-download-fill me-2"></i>Importar de la Central
                         </button>
                         
-                        <button type="button" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
+                        <button type="button" id="btnCrearNuevoLote" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto" style="display: none;">
                             <i class="bi bi-plus-circle-fill me-2"></i>Agregar Nuevo
                         </button>
                     </div>
@@ -609,7 +609,7 @@
                     <h3 class="fw-bold mb-0 text-white">Catálogo Maestro</h3>
                     <p class="text-muted mb-0">Gestiona tus productos, códigos, categorías y precios base rápidamente.</p>
                 </div>
-                <button type="button" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
+                <button type="button" id="btnCrearNuevoCatalogo" class="btn btn-brand-orange py-2 px-4" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto" style="display: none;">
                     <i class="bi bi-plus-circle-fill me-2"></i>Crear Nuevo
                 </button>
             </div>
@@ -655,6 +655,7 @@
                                 <th>P. Público</th>
                                 <th>P. Mayor</th>
                                 <th>Modo</th>
+                                <th class="text-center">App</th> <!-- 🚀 NUEVA COLUMNA -->
                                 <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
@@ -1100,6 +1101,11 @@
                 ? '<i class="bi bi-image-fill text-brand-green fs-5" title="¡Imagen guardada!"></i>' 
                 : '<i class="bi bi-image text-secondary opacity-25 fs-5" title="Sin foto"></i>';
 
+            // 🚀 NUEVO: Lógica del interruptor de la App
+            const isActivo = p.activo !== false; // Si no existe en Firebase, asume True
+            const checkAttr = isActivo ? 'checked' : '';
+            const colorApp = isActivo ? 'var(--accent-blue)' : '#4A5568';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="fw-bold text-white">${p.nombre}</td>
@@ -1109,8 +1115,13 @@
                 <td class="text-brand-green fw-bold">S/ ${pMayor}</td>
                 <td>${badgeModo}</td>
                 <td class="text-center">
+                    <div class="form-check form-switch mb-0 d-flex justify-content-center">
+                        <input class="form-check-input switch-proyeccion" type="checkbox" style="background-color: ${colorApp}; border-color: ${colorApp};" ${checkAttr} onchange="toggleVisibilidadApp(this, '${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">
+                    </div>
+                </td>
+                <td class="text-center">
                     <button class="btn btn-sm btn-outline-info border-0 me-2" onclick="abrirEdicionCatalogo('${p.id}')"><i class="bi bi-pencil-square"></i></button>
-                    <button class="btn btn-sm btn-outline-danger border-0" onclick="eliminarDesdeCatalogo('${p.id}', '${p.nombre}')"><i class="bi bi-trash3-fill"></i></button>
+                    <button class="btn btn-sm btn-outline-danger border-0" onclick="eliminarDesdeCatalogo('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')"><i class="bi bi-trash3-fill"></i></button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1127,6 +1138,54 @@
                 </td>
             `;
             tbody.appendChild(trAviso);
+        }
+    }
+
+
+    function toggleVisibilidadApp(checkbox, idProducto, nombre) {
+        const estadoDeseado = checkbox.checked;
+        const accionTexto = estadoDeseado ? 'MOSTRAR' : 'OCULTAR';
+        
+        // 1. Pregunta de seguridad con el nombre del producto
+        if(confirm(`⚠️ CONFIRMACIÓN DE SEGURIDAD ⚠️\n\n¿Estás seguro de que deseas ${accionTexto} el producto "${nombre}" en la App de tus clientes?`)) {
+            
+            checkbox.disabled = true; // Bloquea mientras carga
+
+            const formData = new FormData();
+            formData.append('action', 'toggle_visibilidad_app');
+            formData.append('producto_id', idProducto);
+            formData.append('producto_nombre', nombre);
+            formData.append('estado', estadoDeseado);
+            formData.append('empresa_id', localStorage.getItem('pos_empresa_id'));
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            formData.append('ajax', 'true');
+
+            fetch('/compras/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} })
+            .then(res => res.json())
+            .then(data => {
+                checkbox.disabled = false;
+                if(data.status === 'success') {
+                    mostrarToast(`✅ Producto ${estadoDeseado ? 'activado' : 'ocultado'} en tu tienda.`, 'success');
+                    
+                    // Actualizar memoria para no recargar la página
+                    const pLocal = productosBase.find(x => x.id === idProducto);
+                    if(pLocal) pLocal.activo = estadoDeseado;
+                    
+                    // Cambiar color: Azul (On) o Gris (Off)
+                    checkbox.style.backgroundColor = estadoDeseado ? 'var(--accent-blue)' : '#4A5568';
+                    checkbox.style.borderColor = estadoDeseado ? 'var(--accent-blue)' : '#4A5568';
+                } else {
+                    mostrarToast(data.message, 'danger');
+                    checkbox.checked = !estadoDeseado; 
+                }
+            }).catch(err => {
+                checkbox.disabled = false;
+                mostrarToast('Error de conexión', 'danger');
+                checkbox.checked = !estadoDeseado; 
+            });
+        } else {
+            // Si presiona "Cancelar", devolvemos el interruptor a su estado original
+            checkbox.checked = !estadoDeseado;
         }
     }
 
@@ -2455,6 +2514,12 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
                 etiquetaRol.innerHTML = '<i class="bi bi-star-fill me-1"></i> Bienvenido, Dueño / CEO';
             }
             
+            // 🚀 NUEVO: Encender botones de Creación SOLO para el CEO
+            const btnNuevoLote = document.getElementById('btnCrearNuevoLote');
+            const btnNuevoCat = document.getElementById('btnCrearNuevoCatalogo');
+            if(btnNuevoLote) btnNuevoLote.style.display = 'block';
+            if(btnNuevoCat) btnNuevoCat.style.display = 'block';
+
             // Permisos de CEO
             const bloqueGlobal = document.getElementById('bloqueGlobalCEO');
             if (bloqueGlobal) bloqueGlobal.style.display = 'block';
