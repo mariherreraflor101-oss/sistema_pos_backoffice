@@ -89,6 +89,22 @@ def gestionar_compras(request):
                 return JsonResponse({'status': 'error', 'message': f'Fallo de conexión con el VPS: {str(e)}'})
 
         # ========================================================
+        # 🚀 PUENTE: ENVIAR LOS CANDADOS DE SEGURIDAD AL VPS
+        # ========================================================
+        elif action == 'actualizar_permisos_control':
+            try:
+                res = requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                    'accion': 'actualizar_permisos',
+                    'usuario_id': request.POST.get('usuario_id'),
+                    'perm_imagen': request.POST.get('perm_imagen'),
+                    'perm_nombre': request.POST.get('perm_nombre'),
+                    'perm_codigo': request.POST.get('perm_codigo')
+                }, timeout=5)
+                return JsonResponse(res.json())
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': f'Fallo de conexión con el VPS: {str(e)}'})
+
+        # ========================================================
         # 🚀 LA DOBLE ACCIÓN: CREAR PRODUCTO
         # ========================================================
         elif action == 'crear_producto':
