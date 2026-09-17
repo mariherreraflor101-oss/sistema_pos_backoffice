@@ -2494,18 +2494,16 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
         cargarCategoriasOficiales();
         cargarFiltroSubcategorias(); 
         
-        // =======================================================
-        // 👑 VALIDACIÓN DE ROLES E IDENTIDAD: CEO vs SOCIOS
-        // =======================================================
+        // 🚀 CORRECCIÓN 1: Leemos la llave EXACTA
         const rolActual = localStorage.getItem('pos_rol');
-        
-        // 🚀 Leemos el correo/nombre guardado en tu login.html
-        const correoUsuario = localStorage.getItem('pos_nombre_usuario') || localStorage.getItem('pos_usuario') || 'Usuario'; 
+        const correoUsuario = localStorage.getItem('pos_usuario_nombre') || 'Usuario'; 
 
         const etiquetaRol = document.getElementById('etiquetaRol');
         const etiquetaCorreo = document.getElementById('etiquetaCorreo');
 
-        if(rolActual === 'Dueño / CEO') {
+        // 🚀 CORRECCIÓN 2: Atrapamos cualquier nombre interno que use Django para el jefe
+        if(rolActual === 'Dueño / CEO' || rolActual === 'superadmin' || rolActual === 'ceo') {
+            
             // 🎨 Diseño visual VIP para el CEO (Naranja)
             if(etiquetaRol) {
                 etiquetaRol.style.backgroundColor = 'rgba(255, 102, 0, 0.1)';

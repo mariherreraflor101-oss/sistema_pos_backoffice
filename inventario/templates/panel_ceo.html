@@ -49,7 +49,8 @@
 
 <!-- BLINDAJE DE SEGURIDAD -->
 <script>
-    if(localStorage.getItem('pos_logueado') !== 'true' || localStorage.getItem('pos_rol') !== 'Dueño / CEO') {
+    const rol = localStorage.getItem('pos_rol');
+    if(localStorage.getItem('pos_logueado') !== 'true' || (rol !== 'Dueño / CEO' && rol !== 'superadmin' && rol !== 'ceo')) {
         alert("⛔ ACCESO DENEGADO. Nivel de autoridad insuficiente.");
         window.location.href = "/login/"; 
     }
