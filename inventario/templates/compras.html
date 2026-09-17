@@ -1317,6 +1317,36 @@
         // Cargar las subcategorías automáticamente si ya tenía una asignada
         cargarSubcategoriasEdicion(p.subcategoria_id);
 
+        // =======================================================
+        // 🔒 SISTEMA DE PERMISOS Y BLOQUEOS (CEO vs SOCIO)
+        // =======================================================
+        const rolAct = localStorage.getItem('pos_rol');
+        const esJefe = (rolAct === 'Dueño / CEO' || rolAct === 'superadmin' || rolAct === 'ceo');
+        
+        // Leemos la memoria (si no existe, asumimos que sí puede por defecto)
+        const puedeNombre = localStorage.getItem('pos_perm_nombre') !== 'false';
+        const puedeCodigo = localStorage.getItem('pos_perm_codigo') !== 'false';
+        const puedeImagen = localStorage.getItem('pos_perm_imagen') !== 'false';
+
+        // 1. Candado de Nombre, Categoría y Subcategoría
+        document.getElementById('editCatNombre').readOnly = (!esJefe && !puedeNombre);
+        document.getElementById('editCatCategoria').disabled = (!esJefe && !puedeNombre);
+        document.getElementById('editCatSubcategoria').disabled = (!esJefe && !puedeNombre);
+        
+        // 2. Candado de Código de Barras
+        document.getElementById('editCatCodigo').readOnly = (!esJefe && !puedeCodigo);
+        
+        // 3. Candado de Imagen
+        const inputImg = document.querySelector('input[name="editar_imagen"]');
+        if(inputImg) inputImg.disabled = (!esJefe && !puedeImagen);
+        
+        // 🎨 Efectos visuales de bloqueo (Para que el socio sepa que no puede tocarlo)
+        const colorBloqueado = '#2d3748';
+        document.getElementById('editCatNombre').style.backgroundColor = (!esJefe && !puedeNombre) ? colorBloqueado : '';
+        document.getElementById('editCatCategoria').style.backgroundColor = (!esJefe && !puedeNombre) ? colorBloqueado : '';
+        document.getElementById('editCatSubcategoria').style.backgroundColor = (!esJefe && !puedeNombre) ? colorBloqueado : '';
+        document.getElementById('editCatCodigo').style.backgroundColor = (!esJefe && !puedeCodigo) ? colorBloqueado : '';
+
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarCatalogo')).show();
     }
 
