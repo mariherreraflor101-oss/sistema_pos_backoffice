@@ -227,7 +227,7 @@
                             <td class="text-muted fw-bold">${sedeNombre}</td>
                             <td style="color: ${colorEstado}; font-weight: bold;">${textoEstado}</td>
                             <td class="text-center">
-                                <button onclick="abrirModalPermisosSocio(${emp.id}, '${identificador}')" class="btn btn-sm btn-outline-info border-0 fw-bold me-2" title="Editar Permisos">
+                                <button onclick="abrirModalPermisosSocio(${emp.id}, '${identificador}', ${emp.perm_editar_imagen !== false}, ${emp.perm_editar_nombre !== false}, ${emp.perm_editar_codigo !== false})" class="btn btn-sm btn-outline-info border-0 fw-bold me-2" title="Editar Permisos">
                                     <i class="bi bi-pencil-square"></i> Editar
                                 </button>
                                 ${emp.is_active 
@@ -271,44 +271,54 @@
         } catch (error) { mostrarToast('Error de comunicación con el puente', 'danger'); }
     }
 
-    // =========================================================
-    // LÓGICA DEL MODAL DE PERMISOS
-    // =========================================================
-    function abrirModalPermisosSocio(id, nombre_usuario) {
-        // Carga los datos visuales
+    function abrirModalPermisosSocio(id, nombre_usuario, p_img = true, p_nom = true, p_cod = true) {
         document.getElementById('modalSocioId').value = id;
         document.getElementById('modalSocioNombre').innerText = nombre_usuario;
         
-        // Muestra el Modal
-        new bootstrap.Modal(document.getElementById('modalPermisosSocio')).show();
+        // Encendemos o apagamos los interruptores según la Base de Datos
+        document.getElementById('perm_imagen').checked = p_img;
+        document.getElementById('perm_nombre').checked = p_nom;
+        document.getElementById('perm_codigo').checked = p_cod;
         
-        // 🚀 Nota Técnica: En el futuro, aquí haremos un 'fetch' para 
-        // traer los permisos actuales de la BD y encender los interruptores.
+        new bootstrap.Modal(document.getElementById('modalPermisosSocio')).show();
     }
 
     async function guardarPermisosSocio(event) {
         event.preventDefault();
         const btn = document.getElementById('btnGuardarPermisos');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Aplicando Candados...';
         btn.disabled = true;
 
-        const socioId = document.getElementById('modalSocioId').value;
-        const permisos = {
-            editar_imagen: document.getElementById('perm_imagen').checked,
-            editar_nombre: document.getElementById('perm_nombre').checked,
-            editar_codigo: document.getElementById('perm_codigo').checked
-        };
-
-        // 🚀 Simulación de guardado en el VPS
-        console.log(`Guardando permisos para Socio ID ${socioId}:`, permisos);
+        let formData = new FormData();
+        formData.append('action', 'actualizar_permisos_control');
+        formData.append('ajax', 'true');
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('usuario_id', document.getElementById('modalSocioId').value);
         
-        setTimeout(() => {
-            mostrarToast('Permisos guardados correctamente en la base de datos.', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('modalPermisosSocio')).hide();
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }, 800);
+        // Atrapamos si están apagados o encendidos
+        formData.append('perm_imagen', document.getElementById('perm_imagen').checked);
+        formData.append('perm_nombre', document.getElementById('perm_nombre').checked);
+        formData.append('perm_codigo', document.getElementById('perm_codigo').checked);
+
+        try {
+            // Mandamos la orden al puente de Python local, y este al VPS
+            let res = await fetch('/compras/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
+            let data = await res.json();
+            
+            if(data.status === 'success') {
+                mostrarToast(data.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('modalPermisosSocio')).hide();
+                cargarSocios(); // Recarga la tabla
+            } else { 
+                mostrarToast(data.message, 'danger'); 
+            }
+        } catch(e) { 
+            mostrarToast('Error de red', 'danger'); 
+        } finally { 
+            btn.innerHTML = originalText; 
+            btn.disabled = false; 
+        }
     }
 
     function cerrarSesionCEO() {

@@ -68,18 +68,21 @@
                 const data = await response.json();
 
                 if (data.status === 'success') {
-    // 🚀 MAGIA: Guardamos la identidad de la empresa en la memoria del navegador
-    localStorage.setItem('pos_empresa_id', data.empresa_id);
-    localStorage.setItem('pos_empresa_nombre', data.empresa_nombre);
-    localStorage.setItem('pos_usuario_nombre', data.nombre_usuario);
-    localStorage.setItem('pos_logueado', 'true');
-    
-    // 👑 NUEVO: ATRAPAMOS EL RANGO Y LO GUARDAMOS
-    localStorage.setItem('pos_rol', data.rol);
+                    // MAGIA: Guardamos la identidad de la empresa
+                    localStorage.setItem('pos_empresa_id', data.empresa_id);
+                    localStorage.setItem('pos_empresa_nombre', data.empresa_nombre);
+                    localStorage.setItem('pos_usuario_nombre', data.nombre_usuario);
+                    localStorage.setItem('pos_logueado', 'true');
+                    localStorage.setItem('pos_rol', data.rol);
+                    
+                    // 🔒 NUEVO: ATRAPAMOS LOS CANDADOS Y LOS GUARDAMOS EN MEMORIA
+                    localStorage.setItem('pos_perm_imagen', data.perm_imagen);
+                    localStorage.setItem('pos_perm_nombre', data.perm_nombre);
+                    localStorage.setItem('pos_perm_codigo', data.perm_codigo);
 
-    // Redirigimos al catálogo/compras del Puerto 81
-    window.location.href = "/compras/";
-} else {
+                    // Redirigimos al catálogo/compras del Puerto 81
+                    window.location.href = "/compras/";
+                } else {
                     errorDiv.textContent = data.message;
                     errorDiv.style.display = 'block';
                 }
