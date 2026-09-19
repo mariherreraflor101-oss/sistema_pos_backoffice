@@ -2115,6 +2115,46 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
                     renderLote();
                 }
 
+                // =========================================================
+                // 🚀 SOLUCIÓN: ACTUALIZAR LA MEMORIA AL GUARDAR CONFIGURACIÓN
+                // =========================================================
+                if (form.id === 'formConfiguracion') {
+                    const idActual = document.querySelector('.hidden-prod-id').value;
+                    const prodEditado = productosBase.find(p => p.id === idActual);
+
+                    if (prodEditado) {
+                        const tipoConfig = document.getElementById('inputTipoConfig').value;
+
+                        if (tipoConfig === 'paquete') {
+                            // Actualiza la memoria visual del Paquete
+                            prodEditado.paquete_nombre = document.getElementById('inputPaqueteNombre').value;
+                            prodEditado.paquete_cantidad = parseSeguro(document.getElementById('inputFactorPaquete').value) || 1;
+                            prodEditado.paquete_codigo = document.getElementById('inputPaqueteCodigo').value;
+                            
+                            // Si el producto está en la calculadora en este momento, actualiza su factor ahí también
+                            const loteProd = loteCompras.find(p => p.id === idActual);
+                            if (loteProd) {
+                                loteProd.factor = prodEditado.paquete_cantidad;
+                                renderLote();
+                            }
+                        } else {
+                            // Actualiza la memoria visual de Precios por Volumen
+                            prodEditado.volumen_nombre = document.getElementById('inputConfigNombreVolumen').value;
+                            prodEditado.volumen_cantidad = parseSeguro(document.getElementById('inputCantidadMinima').value) || 0;
+                            prodEditado.volumen_precio_oferta = parseSeguro(document.getElementById('inputPrecioVolumenOferta').value) || 0;
+
+                            prodEditado.volumen_nombre_2 = document.getElementById('inputConfigNombreVolumen2').value;
+                            prodEditado.volumen_cantidad_2 = parseSeguro(document.getElementById('inputCantidadMinima2').value) || 0;
+                            prodEditado.volumen_precio_2 = parseSeguro(document.getElementById('inputPrecioVolumenOferta2').value) || 0;
+
+                            prodEditado.volumen_nombre_3 = document.getElementById('inputConfigNombreVolumen3').value;
+                            prodEditado.volumen_cantidad_3 = parseSeguro(document.getElementById('inputCantidadMinima3').value) || 0;
+                            prodEditado.volumen_precio_3 = parseSeguro(document.getElementById('inputPrecioVolumenOferta3').value) || 0;
+                        }
+                    }
+                }
+                // =========================================================
+
                 if (form.id === 'formCalculadora') {
                     // 🚀 1. INYECTAR LOS PRECIOS NUEVOS A LA MEMORIA DEL NAVEGADOR
                     let nPMenor = parseSeguro(document.getElementById('inputPrecioMenor').value);
