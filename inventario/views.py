@@ -444,13 +444,14 @@ def gestionar_compras(request):
 
 
         # ========================================================
-        # 👤 CREAR CAJERO PARA LA APP (FIREBASE AUTH)
+        # 👤 CREAR PERSONAL PARA LA APP (FIREBASE AUTH)
         # ========================================================
         elif action == 'crear_cajero':
             try:
                 nombre = request.POST.get('nombre', '').strip()
                 email = request.POST.get('email', '').strip()
                 password = request.POST.get('password', '').strip()
+                rol = request.POST.get('rol', 'CAJERO').strip().upper() # 👈 NUEVA LÍNEA
 
                 # 1. Crea la cuenta oficial para que inicie sesión en la App
                 user_record = auth.create_user(
@@ -463,15 +464,15 @@ def gestionar_compras(request):
                 db.collection('usuarios').document(user_record.uid).set({
                     'nombre': nombre,
                     'email': email,
-                    'rol': 'CAJERO',
+                    'correo': email, # Agregado por seguridad para tu login
+                    'rol': rol,      # 👈 NUEVA LÍNEA (Guarda ADMIN o CAJERO)
                     'activo': True,
                     'fecha_creacion': firestore.SERVER_TIMESTAMP
                 })
 
-                if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Cajero "{nombre}" creado con éxito.'})
+                if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ {rol} "{nombre}" creado con éxito.'})
             except Exception as e:
-                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error: {str(e)}'})     
-
+                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error: {str(e)}'})
         elif action == 'editar_producto_catalogo':
             try:
                 producto_id = request.POST.get('producto_id')
@@ -688,22 +689,23 @@ def gestionar_compras(request):
         })
 
     # ========================================================
-    # 📋 LECTURA DE CAJEROS DEL SOCIO PARA MOSTRAR EN LA WEB
+    # 📋 LECTURA DE PERSONAL PARA MOSTRAR EN LA WEB
     # ========================================================
-    usuarios_ref = db.collection('usuarios').where('rol', '==', 'CAJERO').stream()
+    usuarios_ref = db.collection('usuarios').stream() # 👈 Se quitó el filtro ".where"
     lista_cajeros = []
     for doc in usuarios_ref:
         data_user = doc.to_dict()
         lista_cajeros.append({
             'id': doc.id, 
             'nombre': data_user.get('nombre', 'Sin nombre'), 
-            'email': data_user.get('email', 'Sin correo')
+            'email': data_user.get('email', data_user.get('correo', 'Sin correo')),
+            'rol': data_user.get('rol', 'CAJERO') # 👈 Leemos el rol
         })
 
     return render(request, 'compras.html', {
         'productos_json': productos_json, 
         'historial': historial,
-        'cajeros': lista_cajeros  # <--- ENVIAMOS LOS CAJEROS AQUÍ
+        'cajeros': lista_cajeros  
     })
 # ... EL RESTO DE TUS APIs (api_historial_compras, api_buscar_productos, etc.) QUEDAN INTACTAS ...
 # ==========================================================

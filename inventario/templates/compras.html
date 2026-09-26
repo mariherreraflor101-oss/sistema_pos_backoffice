@@ -699,7 +699,14 @@
                         <tr>
                             <td class="fw-bold text-white"><i class="bi bi-person-circle text-brand-blue me-2"></i>{{ cajero.nombre }}</td>
                             <td class="text-brand-blue">{{ cajero.email }}</td>
-                            <td><span class="badge bg-success">Acceso a la App Activo</span></td>
+                            <td>
+                                {% if cajero.rol == 'ADMIN' %}
+                                    <span class="badge bg-danger mb-1">ADMINISTRADOR</span><br>
+                                {% else %}
+                                    <span class="badge bg-primary mb-1" style="background-color: var(--accent-blue) !important;">CAJERO</span><br>
+                                {% endif %}
+                                <span class="badge bg-success">Acceso a App Activo</span>
+                            </td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="3" class="text-center text-muted py-4">Aún no tienes cajeros creados.</td></tr>
@@ -732,6 +739,13 @@
                             <div class="mb-3">
                                 <label class="form-label text-white small fw-bold">Contraseña (Mínimo 6 caracteres)</label>
                                 <input type="password" name="password" class="form-control text-white" minlength="6" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-white small fw-bold">Nivel de Permisos (Rol)</label>
+                                <select name="rol" class="form-select text-white" style="background-color: var(--bg-main);">
+                                    <option value="CAJERO">Cajero (Solo cobra y vende)</option>
+                                    <option value="ADMIN">Administrador (Acceso total a ajustes)</option>
+                                </select>
                             </div>
                         </div>
                         <div class="modal-footer border-0">
