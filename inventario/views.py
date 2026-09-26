@@ -1,7 +1,7 @@
 import json
 import requests  # 🚀 NUEVO: Librería para comunicarnos con el Subdominio
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth  # <--- Agrega ', auth' aquí
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.contrib import messages
@@ -440,7 +440,37 @@ def gestionar_compras(request):
                     db.collection('compras_inventario').document(compra_id).delete()
                     if is_ajax: return JsonResponse({'status': 'success', 'message': f'🗑️ Compra eliminada permanentemente.'})
             except Exception as e:
-                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})        
+                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})   
+
+
+        # ========================================================
+        # 👤 CREAR CAJERO PARA LA APP (FIREBASE AUTH)
+        # ========================================================
+        elif action == 'crear_cajero':
+            try:
+                nombre = request.POST.get('nombre', '').strip()
+                email = request.POST.get('email', '').strip()
+                password = request.POST.get('password', '').strip()
+
+                # 1. Crea la cuenta oficial para que inicie sesión en la App
+                user_record = auth.create_user(
+                    email=email,
+                    password=password,
+                    display_name=nombre
+                )
+
+                # 2. Guarda su perfil en la base de datos local
+                db.collection('usuarios').document(user_record.uid).set({
+                    'nombre': nombre,
+                    'email': email,
+                    'rol': 'CAJERO',
+                    'activo': True,
+                    'fecha_creacion': firestore.SERVER_TIMESTAMP
+                })
+
+                if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Cajero "{nombre}" creado con éxito.'})
+            except Exception as e:
+                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error: {str(e)}'})     
 
         elif action == 'editar_producto_catalogo':
             try:
@@ -657,8 +687,24 @@ def gestionar_compras(request):
             'fecha': fecha_obj.strftime("%d/%m/%Y") if fecha_obj else "Sin fecha"
         })
 
-    return render(request, 'compras.html', {'productos_json': productos_json, 'historial': historial})
+    # ========================================================
+    # 📋 LECTURA DE CAJEROS DEL SOCIO PARA MOSTRAR EN LA WEB
+    # ========================================================
+    usuarios_ref = db.collection('usuarios').where('rol', '==', 'CAJERO').stream()
+    lista_cajeros = []
+    for doc in usuarios_ref:
+        data_user = doc.to_dict()
+        lista_cajeros.append({
+            'id': doc.id, 
+            'nombre': data_user.get('nombre', 'Sin nombre'), 
+            'email': data_user.get('email', 'Sin correo')
+        })
 
+    return render(request, 'compras.html', {
+        'productos_json': productos_json, 
+        'historial': historial,
+        'cajeros': lista_cajeros  # <--- ENVIAMOS LOS CAJEROS AQUÍ
+    })
 # ... EL RESTO DE TUS APIs (api_historial_compras, api_buscar_productos, etc.) QUEDAN INTACTAS ...
 # ==========================================================
 # APIS EXCLUSIVAS PARA LA APLICACIÓN FLUTTER
@@ -773,5 +819,67 @@ def panel_ceo(request):
     # La seguridad de sesión (si es CEO o no) ya está blindada 
     # por tu JavaScript en el Frontend. Si pasa la prueba, cargamos la vista.
     return render(request, 'panel_ceo.html')
+
+
+
+# ==========================================================
+# GESTIÓN DE USUARIOS Y ROLES (PANEL WEB)
+# ==========================================================
+def gestionar_usuarios(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('ajax') == 'true'
+
+        if action == 'crear_usuario':
+            try:
+                nombre = request.POST.get('nombre', '').strip()
+                email = request.POST.get('email', '').strip()
+                password = request.POST.get('password', '').strip()
+                rol = request.POST.get('rol', 'cajero').upper()
+
+                # 1. Crear el usuario en Firebase Authentication (Inicio de sesión)
+                user_record = auth.create_user(
+                    email=email,
+                    password=password,
+                    display_name=nombre
+                )
+
+                # 2. Guardar su rol en Firestore para que Flutter lo lea
+                db.collection('usuarios').document(user_record.uid).set({
+                    'nombre': nombre,
+                    'email': email,
+                    'rol': rol,
+                    'activo': True,
+                    'fecha_creacion': firestore.SERVER_TIMESTAMP
+                })
+
+                if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Usuario {nombre} creado con éxito.'})
+            except Exception as e:
+                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error: {str(e)}'})
+
+        elif action == 'eliminar_usuario':
+            try:
+                uid = request.POST.get('uid')
+                if uid:
+                    auth.delete_user(uid) # Borra el acceso
+                    db.collection('usuarios').document(uid).delete() # Borra el rol
+                    if is_ajax: return JsonResponse({'status': 'success', 'message': '🗑️ Usuario eliminado del sistema.'})
+            except Exception as e:
+                if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al eliminar: {str(e)}'})
+
+    # Si es GET, enviamos la lista de usuarios a la pantalla
+    usuarios_ref = db.collection('usuarios').stream()
+    lista_usuarios = []
+    for doc in usuarios_ref:
+        data = doc.to_dict()
+        lista_usuarios.append({
+            'uid': doc.id,
+            'nombre': data.get('nombre', 'Sin nombre'),
+            'email': data.get('email', 'Sin correo'),
+            'rol': data.get('rol', 'CAJERO'),
+            'activo': data.get('activo', True)
+        })
+
+    return render(request, 'usuarios.html', {'usuarios': lista_usuarios})
 
 

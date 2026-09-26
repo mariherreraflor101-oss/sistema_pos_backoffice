@@ -8,6 +8,7 @@ urlpatterns = [
     
     # 👑 NUEVA RUTA PARA EL PANEL DEL DUEÑO / CEO
     path('panel-ceo/', views.panel_ceo, name='panel_ceo'),
+    path('usuarios/', views.gestionar_usuarios, name='gestionar_usuarios'),
     
     # ==========================================
     # RUTAS PARA LA APLICACIÓN FLUTTER
