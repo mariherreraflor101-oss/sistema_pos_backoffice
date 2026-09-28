@@ -114,23 +114,26 @@ def gestionar_compras(request):
                 es_granel = request.POST.get('nuevo_es_granel') == 'on'
                 
                 categoria_id = request.POST.get('nueva_categoria_id') 
-                subcategoria_id = request.POST.get('nueva_subcategoria_id') # 🔴 NUEVO
+                subcategoria_id = request.POST.get('nueva_subcategoria_id') 
                 
                 precio_menor = to_float(request.POST.get('nuevo_precio_menor'))
                 precio_mayor = to_float(request.POST.get('nuevo_precio_mayor'))
 
                 # --- 1. ENVIAR AL SUBDOMINIO (MYSQL + CLOUDFLARE) ---
                 empresa_id = request.POST.get('empresa_id') 
-                es_global = request.POST.get('es_global') == 'on'  # 🚀 ATRAPAMOS EL INTERRUPTOR
+                es_global = request.POST.get('es_global') == 'on'  
+                
+                # 🚀 NUEVO: EVALUAMOS SI EL USUARIO SUBIÓ UNA FOTO O NO
+                tiene_foto = 'nueva_imagen' in request.FILES
                 
                 archivos = {}
-                if 'nueva_imagen' in request.FILES:
+                if tiene_foto:
                     img = request.FILES['nueva_imagen']
                     archivos = {'imagen': (img.name, img.read(), img.content_type)}
                 
                 datos_mysql = {
                     'nombre': nombre,
-                    'codigo_barras': codigo_barras, # 🚀 NUEVO: Lo enviamos a la nube
+                    'codigo_barras': codigo_barras, 
                     'precio_final': precio_menor,
                     'precio_antiguo': 0, 
                     'categoria_id': categoria_id,
@@ -138,23 +141,34 @@ def gestionar_compras(request):
                     'empresa_id': empresa_id,
                     'venta_granel': 'true' if es_granel else 'false',
                     'es_global': 'true' if es_global else 'false',
+                    'estado': 'true' if tiene_foto else 'false', # 👈 Le avisa a la App si debe mostrarlo
                 }
                 
                 try:
                     # Disparamos la petición al cerebro maestro
                     requests.post(f"{URL_MAESTRO}/api/interno/recibir_producto/", data=datos_mysql, files=archivos, timeout=5)
+                    
+                    # 🛡️ BLINDAJE DE SEGURIDAD: Si no tiene foto, forzamos a ocultarlo en la App
+                    if not tiene_foto and empresa_id:
+                        requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                            'accion': 'toggle_visibilidad',
+                            'nombre': nombre,
+                            'empresa_id': empresa_id,
+                            'estado': 'false'
+                        }, timeout=3)
+                        
                 except Exception as api_err:
                     print("⚠️ Advertencia:", api_err)
 
                 # --- 2. GUARDAR EN FIREBASE (PARA LAS CAJERAS) ---
                 nuevo_producto = {
                     'nombre': nombre,
-                    'tiene_imagen': 'nueva_imagen' in request.FILES, # 🚀 NUEVO: Deja la huella
+                    'tiene_imagen': tiene_foto, 
+                    'activo': tiene_foto, # 👈 MAGIA: Si NO hay foto, nace como "False" (Oculto)
                     'codigo_barras': codigo_barras,
                     'venta_granel': es_granel,
                     'precio': precio_menor,             
                     'volumen_precio': precio_mayor,
-                    # ... (resto del código intacto)
                     'categoria_id': categoria_id,
                     'subcategoria_id': subcategoria_id,
                     'ventas_mes': 0,           
@@ -192,15 +206,14 @@ def gestionar_compras(request):
                             'volumen_cantidad': '',
                             'volumen_precio_oferta': '',
                             'venta_granel': es_granel,
-                            # 🚀 AÑADIMOS LOS CAMPOS FALTANTES PARA EL JAVASCRIPT
                             'codigo_barras': codigo_barras,
                             'categoria_id': categoria_id,
-                            'subcategoria_id': subcategoria_id
+                            'subcategoria_id': subcategoria_id,
+                            'activo': tiene_foto # 👈 Le avisa al frontend para que dibuje el interruptor apagado
                         }
                     })
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al crear: {str(e)}'})
-
         # ... EL RESTO DE TUS MÉTODOS ORIGINALES ...
         elif action == 'actualizar_nombre':
             try:
