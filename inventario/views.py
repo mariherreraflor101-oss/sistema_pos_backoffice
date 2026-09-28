@@ -282,17 +282,30 @@ def gestionar_compras(request):
                     empresa_id = request.POST.get('empresa_id')
                     if empresa_id:
                         try:
+                            # 1. 🛡️ BLINDAJE: Revisamos si el producto tiene imagen guardada en Firebase
+                            doc_prod = db.collection('productos').document(p_id).get()
+                            tiene_imagen = doc_prod.to_dict().get('tiene_imagen', False) if doc_prod.exists else True
+
+                            # 2. Sincronizamos el precio normal
                             datos_sincronizacion = {
-                                'accion': 'sincronizar_precios_calculadora', # 👈 Comando inteligente
+                                'accion': 'sincronizar_precios_calculadora', 
                                 'nombre': p.get('nombre'),
                                 'precio_final': precio_menor,
                                 'empresa_id': empresa_id,
                             }
-                            # 🚀 CORRECCIÓN: Apuntamos al puente de control-superior
                             requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data=datos_sincronizacion, timeout=3)
+
+                            # 3. 🔒 EL CANDADO: Si NO tiene imagen, le exigimos a la App que lo vuelva a ocultar instantáneamente
+                            if not tiene_imagen:
+                                requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                                    'accion': 'toggle_visibilidad',
+                                    'nombre': p.get('nombre'),
+                                    'empresa_id': empresa_id,
+                                    'estado': 'false'
+                                }, timeout=3)
+
                         except Exception as e:
                             print(f"⚠️ Error sincronizando precio del lote para {p.get('nombre')}:", e)
-
 
                 if len(bonos_externos) > 0:
                     for b in bonos_externos:
