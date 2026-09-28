@@ -407,9 +407,19 @@ def gestionar_compras(request):
                         batch.update(doc_ref, {'orden': item['orden']})
                     
                     batch.commit()
+                    
+                    # 🚀 NUEVO: LE AVISAMOS AL CEREBRO MAESTRO (MYSQL)
+                    try:
+                        requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                            'accion': 'guardar_orden_maestro',
+                            'orden_json': orden_json
+                        }, timeout=3)
+                    except Exception as api_err:
+                        print("⚠️ Error enviando el orden al Servidor Central:", api_err)
+                        
                     if is_ajax: return JsonResponse({'status': 'success'})
             except Exception as e:
-                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})        
+                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})     
 
         elif action == 'filtrar_historial':
             try:
@@ -669,7 +679,8 @@ def gestionar_compras(request):
                                 'tiene_imagen': prod_nube.get('imagen', False),
                                 'ventas_mes': 0,
                                 'stock_infinito': True,
-                                'fecha_creacion': firestore.SERVER_TIMESTAMP
+                                'fecha_creacion': firestore.SERVER_TIMESTAMP,
+                                'orden': prod_nube.get('orden', 9999) # 👈 ¡NUEVA LÍNEA! Hereda el orden del CEO
                             })
                     return JsonResponse(data_maestro)
                 else:
