@@ -1963,7 +1963,19 @@
         }
 
         document.getElementById('areaGestion').style.display = 'block';
-        document.getElementById('cajaEdicionNombre').style.display = 'block';
+        
+        // 🔒 CANDADO DE SEGURIDAD: Ocultar la edición y eliminación para Socios
+        const rolUsuario = localStorage.getItem('pos_rol');
+        const esJefe = (rolUsuario === 'Dueño / CEO' || rolUsuario === 'superadmin' || rolUsuario === 'ceo');
+        const tienePermisoNombre = localStorage.getItem('pos_perm_nombre') !== 'false';
+
+        // Si es CEO o tiene el permiso explícito activado, lo mostramos. Si es un Socio normal, lo ocultamos.
+        if (esJefe || tienePermisoNombre) {
+            document.getElementById('cajaEdicionNombre').style.display = 'block';
+        } else {
+            document.getElementById('cajaEdicionNombre').style.display = 'none';
+        }
+
         document.getElementById('colConfiguracion').style.display = 'block';
         document.getElementById('colCalculadora').className = 'col-lg-7';
 
