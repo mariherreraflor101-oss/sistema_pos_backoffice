@@ -393,6 +393,24 @@ def gestionar_compras(request):
                 if is_ajax:
                     return JsonResponse({'status': 'success', 'message': f'🟩 Producto "{producto_nombre}" eliminado.'})
 
+        # ========================================================
+        # ↕️ GUARDAR EL NUEVO ORDEN (DRAG AND DROP)
+        # ========================================================
+        elif action == 'guardar_orden_catalogo':
+            try:
+                orden_json = request.POST.get('orden_json')
+                if orden_json:
+                    items = json.loads(orden_json)
+                    batch = db.batch() # 🚀 Usamos "batch" para guardar 50 productos en 1 milisegundo
+                    for item in items:
+                        doc_ref = db.collection('productos').document(item['id'])
+                        batch.update(doc_ref, {'orden': item['orden']})
+                    
+                    batch.commit()
+                    if is_ajax: return JsonResponse({'status': 'success'})
+            except Exception as e:
+                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})        
+
         elif action == 'filtrar_historial':
             try:
                 fecha_desde = datetime.strptime(request.POST.get('fecha_desde'), "%Y-%m-%d").replace(tzinfo=timezone.utc)
@@ -691,7 +709,8 @@ def gestionar_compras(request):
             'volumen_precio_3': data.get('volumen_precio_3', ''),
             'venta_granel': data.get('venta_granel', False),
             'imagen': data.get('tiene_imagen', False), 
-            'activo': data.get('activo', True) # 🚀 NUEVO: Leemos el estado
+            'activo': data.get('activo', True),
+            'orden': data.get('orden', 9999) # 👈 NUEVA LÍNEA: Lee la posición (9999 si es nuevo)
         })
     productos_json = json.dumps(lista_productos)
 

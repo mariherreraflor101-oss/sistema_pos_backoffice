@@ -104,12 +104,9 @@
     // 🚀 REPARACIÓN DE VARIABLES JSON (precio vs precio_actual)
     // =========================================================
     const productosBase = JSON.parse('{{ productos_json|escapejs }}').map(p => {
-        // Si el backend mandó 'precio' pero el frontend espera 'precio_actual', lo reparamos
-        if (p.precio !== undefined && p.precio_actual === undefined) {
-            p.precio_actual = p.precio;
-        }
+        if (p.precio !== undefined && p.precio_actual === undefined) p.precio_actual = p.precio;
         return p;
-    });
+    }).sort((a, b) => (a.orden || 9999) - (b.orden || 9999)); // 👈 NUEVO: Ordena por posición
 
     let loteCompras = [];
     let costoUnitarioActual = 0;
@@ -654,6 +651,7 @@
                     <table class="table align-middle mb-0">
                         <thead class="table-custom-header">
                             <tr>
+                                <th class="text-center"><i class="bi bi-arrows-move fs-5 text-brand-orange"></i></th> <!-- 👈 NUEVO -->
                                 <th>Producto</th>
                                 <th class="text-center" title="¿Tiene Imagen?"><i class="bi bi-image"></i> Foto</th>
                                 <th>Código Barras</th>
@@ -1105,7 +1103,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+<!-- 🚀 NUEVA LIBRERÍA PARA ARRASTRAR Y SOLTAR -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
     // =========================================================
     // LÓGICA DE NIVELES (AGREGAR / QUITAR)
@@ -1205,9 +1204,12 @@
             const colorApp = isActivo ? 'var(--accent-blue)' : '#4A5568';
 
             const tr = document.createElement('tr');
+            tr.setAttribute('data-id', p.id); // 👈 NUEVO: Etiquetar la fila con el ID
             tr.innerHTML = `
+                <td class="text-center drag-handle" style="cursor: grab;"><i class="bi bi-grip-vertical text-secondary fs-4"></i></td> <!-- 👈 NUEVO -->
                 <td class="fw-bold text-white">${p.nombre}</td>
                 <td class="text-center">${iconFoto}</td>
+                // ... (El resto de tus <td> quedan igualitos) ...
                 <td class="text-muted"><i class="bi bi-upc me-1"></i> ${p.codigo_barras || 'Sin código'}</td>
                 <td><span class="badge-precio-venta">S/ ${pMenor}</span></td>
                 <td class="text-brand-green fw-bold">S/ ${pMayor}</td>
@@ -1237,7 +1239,11 @@
             `;
             tbody.appendChild(trAviso);
         }
+    
+        initSortable(); // 👈 NUEVO: Activa el arrastre cada vez que dibujas la tabla
+    
     }
+     // FIN DE renderizarCatalogo
 
 
     function toggleVisibilidadApp(checkbox, idProducto, nombre) {
@@ -2823,6 +2829,53 @@ function calcularPreciosVolumen(nivel, origen = 'unidad') {
 
         // 🚀 MAGIA FINAL: Inyectamos todo el HTML de un solo golpe al navegador.
         tbody.innerHTML = htmlMemoria.join('');
+    }
+
+    // =========================================================
+    // ↕️ MOTOR DE ARRASTRAR Y SOLTAR (DRAG AND DROP)
+    // =========================================================
+    let sortableCatalogo = null;
+
+    function initSortable() {
+        const tbody = document.getElementById('tablaCatalogoBody');
+        if(sortableCatalogo) sortableCatalogo.destroy(); // Resetea si ya existía
+        
+        sortableCatalogo = Sortable.create(tbody, {
+            handle: '.drag-handle', // Solo permite arrastrar tocando el ícono de los puntitos
+            animation: 150,         // Movimiento suave y fluido
+            onEnd: function () {
+                guardarNuevoOrden(); // Dispara el guardado al soltar el click
+            }
+        });
+    }
+
+    function guardarNuevoOrden() {
+        // Lee cómo quedaron ordenadas las filas visualmente
+        const filas = document.querySelectorAll('#tablaCatalogoBody tr[data-id]');
+        let nuevoOrden = [];
+        filas.forEach((fila, index) => {
+            nuevoOrden.push({ id: fila.getAttribute('data-id'), orden: index + 1 });
+        });
+
+        // Lo envía silenciosamente a tu servidor Django
+        const formData = new FormData();
+        formData.append('action', 'guardar_orden_catalogo');
+        formData.append('orden_json', JSON.stringify(nuevoOrden));
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('ajax', 'true');
+
+        fetch('/compras/', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                mostrarToast('✅ Nuevo orden sincronizado con la App', 'success');
+                // Actualiza la memoria local
+                nuevoOrden.forEach(item => {
+                    let p = productosBase.find(x => x.id === item.id);
+                    if (p) p.orden = item.orden;
+                });
+            }
+        });
     }
 
     // Buscador en vivo del modal
