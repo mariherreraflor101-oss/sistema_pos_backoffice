@@ -101,13 +101,24 @@
     }
 
     // =========================================================
-    // 🚀 REPARACIÓN DE VARIABLES JSON (precio vs precio_actual)
+    // 🚀 AGRUPACIÓN INTELIGENTE (COMO EN LA APP MÓVIL)
     // =========================================================
     const productosBase = JSON.parse('{{ productos_json|escapejs }}').map(p => {
-        if (p.precio !== undefined && p.precio_actual === undefined) p.precio_actual = p.precio;
+        if (p.precio !== undefined && p.precio_actual === undefined) {
+            p.precio_actual = p.precio;
+        }
         return p;
-    }).sort((a, b) => (a.orden || 9999) - (b.orden || 9999)); // 👈 NUEVO: Ordena por posición
-
+    }).sort((a, b) => {
+        // 1. Agrupamos primero por subcategoría (para que todos los jabones se junten)
+        const subA = String(a.subcategoria_id || "ZZZ");
+        const subB = String(b.subcategoria_id || "ZZZ");
+        if (subA !== subB) return subA.localeCompare(subB);
+        
+        // 2. Si son de la misma familia, respetamos el orden que les diste al arrastrarlos
+        const ordenA = parseInt(a.orden) || 9999;
+        const ordenB = parseInt(b.orden) || 9999;
+        return ordenA - ordenB;
+    });
     let loteCompras = [];
     let costoUnitarioActual = 0;
     let costoUnitarioModal = 0;
