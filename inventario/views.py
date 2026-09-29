@@ -588,8 +588,21 @@ def gestionar_compras(request):
                         'precio_antiguo': precio_antiguo, # 🚀 Lo guardamos en Firebase local
                         'volumen_precio': precio_mayor,
                     }
-                    if 'editar_imagen' in request.FILES: # 🚀 NUEVO: Deja la huella si subió foto
+                    if 'editar_imagen' in request.FILES: 
                         datos_actualizar['tiene_imagen'] = True
+                        datos_actualizar['activo'] = True # 👈 1. Lo enciende en tu Firebase local
+                        
+                        # 👈 2. Le ordena al Servidor Central que lo despierte en la App
+                        if empresa_id:
+                            try:
+                                requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
+                                    'accion': 'toggle_visibilidad',
+                                    'nombre': nombre,
+                                    'empresa_id': empresa_id,
+                                    'estado': 'true'
+                                }, timeout=3)
+                            except Exception as e:
+                                pass
                     if categoria_id:
                         datos_actualizar['categoria_id'] = categoria_id
                     if subcategoria_id:

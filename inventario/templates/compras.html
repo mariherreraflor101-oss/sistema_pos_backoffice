@@ -1499,8 +1499,11 @@
                     // 🚀 AQUÍ ESTÁ LA LÍNEA QUE FALTABA
                     if(data.datos.subcategoria_id) pLocal.subcategoria_id = data.datos.subcategoria_id; 
                     
-                    // 🚀 ENCIENDE EL ICONO EN VIVO AL GUARDAR
-                    if(data.datos.tiene_imagen) pLocal.imagen = true;
+                    // 🚀 ENCIENDE EL ICONO Y EL INTERRUPTOR AZUL AL GUARDAR
+                    if(data.datos.tiene_imagen) {
+                        pLocal.imagen = true;
+                        pLocal.activo = true; // 👈 Esto hace que el botón se vuelva azul al instante
+                    }
                 }
                 filtrarCatalogo(); // Redibujar la tabla
                 bootstrap.Modal.getInstance(document.getElementById('modalEditarCatalogo')).hide();
