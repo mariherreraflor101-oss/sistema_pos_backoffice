@@ -1210,17 +1210,24 @@
                 : '<i class="bi bi-image text-secondary opacity-25 fs-5" title="Sin foto"></i>';
 
             // 🚀 NUEVO: Lógica del interruptor EXCLUSIVA para la App
-            const isActivo = p.visible_en_app !== false; // Si no existe en Firebase, asume True
-            const checkAttr = isActivo ? 'checked' : '';
-            const colorApp = isActivo ? 'var(--accent-blue)' : '#4A5568';
+            const isVisibleApp = p.visible_en_app !== false; // Si no existe, asume True
+            const checkAttr = isVisibleApp ? 'checked' : '';
+            const colorApp = isVisibleApp ? 'var(--accent-blue)' : '#4A5568';
+
+            // 🚨 EL RADAR DE FANTASMAS: Detecta si está apagado para los cajeros
+            const alertaPOS = (p.activo === false) 
+                ? '<br><span class="badge bg-danger mt-1" style="font-size: 0.65rem;" title="Los cajeros no pueden ver esto"><i class="bi bi-exclamation-triangle-fill"></i> CAJA CERRADA (Editar y Guardar)</span>' 
+                : '';
 
             const tr = document.createElement('tr');
-            tr.setAttribute('data-id', p.id); // 👈 NUEVO: Etiquetar la fila con el ID
+            tr.setAttribute('data-id', p.id); 
             tr.innerHTML = `
-                <td class="text-center drag-handle" style="cursor: grab;"><i class="bi bi-grip-vertical text-secondary fs-4"></i></td> <!-- 👈 NUEVO -->
-                <td class="fw-bold text-white">${p.nombre}</td>
+                <td class="text-center drag-handle" style="cursor: grab;"><i class="bi bi-grip-vertical text-secondary fs-4"></i></td>
+                
+                <!-- 🚀 AQUÍ INYECTAMOS LA ALERTA AL LADO DEL NOMBRE -->
+                <td class="fw-bold text-white">${p.nombre} ${alertaPOS}</td> 
+                
                 <td class="text-center">${iconFoto}</td>
-                // ... (El resto de tus <td> quedan igualitos) ...
                 <td class="text-muted"><i class="bi bi-upc me-1"></i> ${p.codigo_barras || 'Sin código'}</td>
                 <td><span class="badge-precio-venta">S/ ${pMenor}</span></td>
                 <td class="text-brand-green fw-bold">S/ ${pMayor}</td>
