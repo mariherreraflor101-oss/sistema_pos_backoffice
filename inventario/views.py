@@ -164,8 +164,10 @@ def gestionar_compras(request):
                 nuevo_producto = {
                     'nombre': nombre,
                     'tiene_imagen': tiene_foto, 
-                    'activo': tiene_foto, # 👈 MAGIA: Si NO hay foto, nace como "False" (Oculto)
+                    'activo': True, # 🚀 CORRECCIÓN: Siempre visible para tus cajeros
+                    'visible_en_app': tiene_foto, # 👈 Solo se muestra en la App si tiene foto
                     'codigo_barras': codigo_barras,
+                    # ... (resto de campos iguales)
                     'venta_granel': es_granel,
                     'precio': precio_menor,             
                     'volumen_precio': precio_mayor,
@@ -209,7 +211,8 @@ def gestionar_compras(request):
                             'codigo_barras': codigo_barras,
                             'categoria_id': categoria_id,
                             'subcategoria_id': subcategoria_id,
-                            'activo': tiene_foto # 👈 Le avisa al frontend para que dibuje el interruptor apagado
+                            'activo': True, 
+                            'visible_en_app': tiene_foto # 👈 Le avisa al frontend
                         }
                     })
             except Exception as e:
@@ -590,8 +593,8 @@ def gestionar_compras(request):
                     }
                     if 'editar_imagen' in request.FILES: 
                         datos_actualizar['tiene_imagen'] = True
-                        datos_actualizar['activo'] = True # 👈 1. Lo enciende en tu Firebase local
-                        
+                        datos_actualizar['visible_en_app'] = True # 🚀 CORRECCIÓN: Solo enciende el interruptor de la App
+                        # (Borra la línea que decía datos_actualizar['activo'] = True)
                         # 👈 2. Le ordena al Servidor Central que lo despierte en la App
                         if empresa_id:
                             try:
@@ -628,7 +631,8 @@ def gestionar_compras(request):
 
                 # 1. Guardar en el Firebase de la caja
                 if producto_id:
-                    db.collection('productos').document(producto_id).update({'activo': nuevo_estado})
+                    # 🚀 CORRECCIÓN: Solo apagamos su visibilidad en la app, NO en el POS
+                    db.collection('productos').document(producto_id).update({'visible_en_app': nuevo_estado})
 
                 # 2. Enviar el disparo de apagado al VPS
                 if empresa_id:
@@ -731,10 +735,11 @@ def gestionar_compras(request):
             'volumen_nombre_3': data.get('volumen_nombre_3', ''),
             'volumen_cantidad_3': data.get('volumen_cantidad_3', ''),
             'volumen_precio_3': data.get('volumen_precio_3', ''),
-            'venta_granel': data.get('venta_granel', False),
+           'venta_granel': data.get('venta_granel', False),
             'imagen': data.get('tiene_imagen', False), 
-            'activo': data.get('activo', True),
-            'orden': data.get('orden', 9999) # 👈 NUEVA LÍNEA: Lee la posición (9999 si es nuevo)
+            'activo': data.get('activo', True), # 👈 Se mantiene para el POS
+            'visible_en_app': data.get('visible_en_app', True), # 🚀 NUEVO: Exclusivo para el interruptor
+            'orden': data.get('orden', 9999)
         })
     productos_json = json.dumps(lista_productos)
 

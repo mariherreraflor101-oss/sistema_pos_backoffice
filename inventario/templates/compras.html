@@ -1209,8 +1209,8 @@
                 ? '<i class="bi bi-image-fill text-brand-green fs-5" title="¡Imagen guardada!"></i>' 
                 : '<i class="bi bi-image text-secondary opacity-25 fs-5" title="Sin foto"></i>';
 
-            // 🚀 NUEVO: Lógica del interruptor de la App
-            const isActivo = p.activo !== false; // Si no existe en Firebase, asume True
+            // 🚀 NUEVO: Lógica del interruptor EXCLUSIVA para la App
+            const isActivo = p.visible_en_app !== false; // Si no existe en Firebase, asume True
             const checkAttr = isActivo ? 'checked' : '';
             const colorApp = isActivo ? 'var(--accent-blue)' : '#4A5568';
 
@@ -1282,9 +1282,9 @@
                 if(data.status === 'success') {
                     mostrarToast(`✅ Producto ${estadoDeseado ? 'activado' : 'ocultado'} en tu tienda.`, 'success');
                     
-                    // Actualizar memoria para no recargar la página
+                    // 🚀 CORRECCIÓN: Actualizamos memoria de la App sin afectar al POS
                     const pLocal = productosBase.find(x => x.id === idProducto);
-                    if(pLocal) pLocal.activo = estadoDeseado;
+                    if(pLocal) pLocal.visible_en_app = estadoDeseado;
                     
                     // Cambiar color: Azul (On) o Gris (Off)
                     checkbox.style.backgroundColor = estadoDeseado ? 'var(--accent-blue)' : '#4A5568';
