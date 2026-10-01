@@ -164,10 +164,9 @@ def gestionar_compras(request):
                 nuevo_producto = {
                     'nombre': nombre,
                     'tiene_imagen': tiene_foto, 
-                    'activo': True, # 🚀 CORRECCIÓN: Siempre visible para tus cajeros
-                    'visible_en_app': tiene_foto, # 👈 Solo se muestra en la App si tiene foto
+                    'activo': True,               # 🚀 CORRECCIÓN: SIEMPRE visible para tus cajeros
+                    'visible_en_app': tiene_foto, # 👈 Solo se muestra en la App de clientes si tiene foto
                     'codigo_barras': codigo_barras,
-                    # ... (resto de campos iguales)
                     'venta_granel': es_granel,
                     'precio': precio_menor,             
                     'volumen_precio': precio_mayor,
@@ -588,14 +587,13 @@ def gestionar_compras(request):
                         'codigo_barras': codigo_barras,
                         'venta_granel': es_granel,
                         'precio': precio_menor,
-                        'precio_antiguo': precio_antiguo, # 🚀 Lo guardamos en Firebase local
+                        'precio_antiguo': precio_antiguo, 
                         'volumen_precio': precio_mayor,
+                        'activo': True, # 🚀 CORRECCIÓN MÁGICA: Esto resucitará al producto para los cajeros
                     }
                     if 'editar_imagen' in request.FILES: 
                         datos_actualizar['tiene_imagen'] = True
-                        datos_actualizar['visible_en_app'] = True # 🚀 CORRECCIÓN: Solo enciende el interruptor de la App
-                        # (Borra la línea que decía datos_actualizar['activo'] = True)
-                        # 👈 2. Le ordena al Servidor Central que lo despierte en la App
+                        datos_actualizar['visible_en_app'] = True # 👈 Solo afecta a la App de Play Store
                         if empresa_id:
                             try:
                                 requests.post(f"{URL_MAESTRO}/api/interno/control-superior/", data={
