@@ -7,6 +7,8 @@ from django.http import JsonResponse
 from django.contrib import messages
 from datetime import datetime, timedelta, timezone 
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
+from google.api_core.exceptions import ResourceExhausted
 
 # ==========================================================
 # 🔴 ENLACE AL MAESTRO (Cambia esto por el dominio real de tu Subdominio)
@@ -19,6 +21,150 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
+# ==========================================================
+# ⚡ CAPA DE CACHÉ PARA REDUCIR LECTURAS DE FIRESTORE
+# Mantiene la misma arquitectura y los mismos datos que recibe el panel.
+# ==========================================================
+CACHE_PRODUCTOS = 'pos_productos_completos_v1'
+CACHE_PRODUCTOS_STALE = 'pos_productos_completos_stale_v1'
+CACHE_USUARIOS = 'pos_usuarios_v1'
+CACHE_USUARIOS_STALE = 'pos_usuarios_stale_v1'
+CACHE_HISTORIAL_15 = 'pos_historial_15_v1'
+CACHE_HISTORIAL_15_STALE = 'pos_historial_15_stale_v1'
+CACHE_HISTORIAL_APP = 'pos_historial_app_v1'
+CACHE_HISTORIAL_APP_STALE = 'pos_historial_app_stale_v1'
+
+
+def invalidar_cache_productos():
+    cache.delete(CACHE_PRODUCTOS)
+
+
+def invalidar_cache_usuarios():
+    cache.delete(CACHE_USUARIOS)
+
+
+def invalidar_cache_historial():
+    cache.delete(CACHE_HISTORIAL_15)
+    cache.delete(CACHE_HISTORIAL_APP)
+
+
+def obtener_productos_cache():
+    """Devuelve el mismo catálogo que antes, pero evita leer Firestore en cada carga."""
+    productos = cache.get(CACHE_PRODUCTOS)
+    if productos is not None:
+        return productos
+
+    try:
+        lista_productos = []
+        for doc in db.collection('productos').stream():
+            data = doc.to_dict()
+            lista_productos.append({
+                'id': doc.id,
+                'nombre': data.get('nombre', 'Sin nombre'),
+                'precio_actual': data.get('precio', 0.0),
+                'precio_antiguo': data.get('precio_antiguo', 0.0),
+                'precio_mayor': data.get('volumen_precio', 0.0),
+                'paquete_nombre': data.get('paquete_nombre', ''),
+                'paquete_codigo': data.get('paquete_codigo', ''),
+                'paquete_cantidad': data.get('paquete_cantidad', 1),
+                'codigo_barras': data.get('codigo_barras', ''),
+                'categoria_id': data.get('categoria_id', ''),
+                'subcategoria_id': data.get('subcategoria_id', ''),
+                'volumen_nombre': data.get('volumen_nombre', ''),
+                'volumen_cantidad': data.get('volumen_cantidad', ''),
+                'volumen_precio_oferta': data.get('volumen_precio', ''),
+                'volumen_nombre_2': data.get('volumen_nombre_2', ''),
+                'volumen_cantidad_2': data.get('volumen_cantidad_2', ''),
+                'volumen_precio_2': data.get('volumen_precio_2', ''),
+                'volumen_nombre_3': data.get('volumen_nombre_3', ''),
+                'volumen_cantidad_3': data.get('volumen_cantidad_3', ''),
+                'volumen_precio_3': data.get('volumen_precio_3', ''),
+                'venta_granel': data.get('venta_granel', False),
+                'imagen': data.get('tiene_imagen', False),
+                'activo': data.get('activo', True),
+                'visible_en_app': data.get('visible_en_app', True),
+                'orden': data.get('orden', 9999),
+                # Campos que usa la API de búsqueda de Flutter
+                'ultimo_costo': data.get('ultimo_costo', 0.0),
+                'cantidad_mayor': data.get('volumen_cantidad', 3),
+            })
+
+        # Caché fresca 5 min + copia de emergencia 24 h.
+        cache.set(CACHE_PRODUCTOS, lista_productos, 300)
+        cache.set(CACHE_PRODUCTOS_STALE, lista_productos, 86400)
+        return lista_productos
+    except ResourceExhausted:
+        print('⚠️ Firebase agotó cuota al leer productos. Usando copia de emergencia.')
+        return cache.get(CACHE_PRODUCTOS_STALE, [])
+    except Exception as e:
+        print(f'⚠️ Error leyendo productos de Firebase: {e}')
+        return cache.get(CACHE_PRODUCTOS_STALE, [])
+
+
+def obtener_usuarios_cache():
+    usuarios = cache.get(CACHE_USUARIOS)
+    if usuarios is not None:
+        return usuarios
+
+    try:
+        lista = []
+        for doc in db.collection('usuarios').stream():
+            data = doc.to_dict()
+            lista.append({
+                'id': doc.id,
+                'uid': doc.id,
+                'nombre': data.get('nombre', 'Sin nombre'),
+                'email': data.get('email', data.get('correo', 'Sin correo')),
+                'rol': data.get('rol', 'CAJERO'),
+                'activo': data.get('activo', True),
+            })
+        cache.set(CACHE_USUARIOS, lista, 300)
+        cache.set(CACHE_USUARIOS_STALE, lista, 86400)
+        return lista
+    except ResourceExhausted:
+        print('⚠️ Firebase agotó cuota al leer usuarios. Usando copia de emergencia.')
+        return cache.get(CACHE_USUARIOS_STALE, [])
+    except Exception as e:
+        print(f'⚠️ Error leyendo usuarios de Firebase: {e}')
+        return cache.get(CACHE_USUARIOS_STALE, [])
+
+
+def obtener_historial_15_cache():
+    historial = cache.get(CACHE_HISTORIAL_15)
+    if historial is not None:
+        return historial
+
+    try:
+        lista = []
+        compras_ref = (db.collection('compras_inventario')
+                       .order_by('fecha', direction=firestore.Query.DESCENDING)
+                       .limit(15).stream())
+        for doc in compras_ref:
+            data = doc.to_dict()
+            fecha_obj = data.get('fecha')
+            lista.append({
+                'compra_id': doc.id,
+                'producto_id': data.get('producto_id', ''),
+                'producto': data.get('producto_nombre', ''),
+                'cantidad': obtener_valor_flexible(data, ['cantidad_paquetes', 'cantidad_ingresada_paquetes', 'cantidad'], 0),
+                'factor': obtener_valor_flexible(data, ['factor', 'factor_unidades', 'peso'], 1),
+                'bonificacion': obtener_valor_flexible(data, ['bonificacion', 'bono'], 0),
+                'total_pagado': obtener_valor_flexible(data, ['costo_total'], 0),
+                'precio_mayor': obtener_valor_flexible(data, ['precio_mayor_registrado', 'precio_mayor'], 0),
+                'precio_menor': obtener_valor_flexible(data, ['precio_menor_registrado', 'precio_menor'], 0),
+                'is_menor': data.get('is_menor', True),
+                'fecha': fecha_obj.strftime('%d/%m/%Y') if fecha_obj else 'Sin fecha',
+            })
+        cache.set(CACHE_HISTORIAL_15, lista, 30)
+        cache.set(CACHE_HISTORIAL_15_STALE, lista, 86400)
+        return lista
+    except ResourceExhausted:
+        print('⚠️ Firebase agotó cuota al leer historial. Usando copia de emergencia.')
+        return cache.get(CACHE_HISTORIAL_15_STALE, [])
+    except Exception as e:
+        print(f'⚠️ Error leyendo historial de Firebase: {e}')
+        return cache.get(CACHE_HISTORIAL_15_STALE, [])
 
 def to_float(val, default=0.0):
     if val is None: return default
@@ -39,6 +185,21 @@ def gestionar_compras(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('ajax') == 'true'
+
+        # Invalidamos solo la caché relacionada cuando una acción puede cambiar datos.
+        # Así la siguiente lectura trae datos nuevos sin cambiar la lógica del panel.
+        if action in {
+            'crear_producto', 'actualizar_nombre', 'registrar_compra', 'guardar_configuracion',
+            'eliminar_producto', 'guardar_orden_catalogo', 'actualizar_precios_historial',
+            'editar_producto_catalogo', 'toggle_visibilidad_app', 'importar_producto_central'
+        }:
+            invalidar_cache_productos()
+
+        if action in {'registrar_compra', 'actualizar_proyeccion', 'actualizar_precios_historial', 'eliminar_compra'}:
+            invalidar_cache_historial()
+
+        if action in {'crear_cajero'}:
+            invalidar_cache_usuarios()
 
         # ========================================================
         # 🚀 NUEVO: PUENTES DE CONEXIÓN PARA LEER DEL SUBDOMINIO
@@ -707,72 +868,13 @@ def gestionar_compras(request):
         # --- AQUÍ CONTINÚA TU CÓDIGO ORIGINAL ---
         if not is_ajax: return redirect('gestionar_compras')
 
-    # --- RENDERIZADO INICIAL ---
-    productos_ref = db.collection('productos').stream()
-    lista_productos = []
-    for doc in productos_ref:
-        data = doc.to_dict()
-        lista_productos.append({
-            'id': doc.id,
-            'nombre': data.get('nombre', 'Sin nombre'),
-            'precio_actual': data.get('precio', 0.0),
-            'precio_antiguo': data.get('precio_antiguo', 0.0), # 🚀 NUEVO LECTOR
-            'precio_mayor': data.get('volumen_precio', 0.0),
-            'paquete_nombre': data.get('paquete_nombre', ''),
-            'paquete_codigo': data.get('paquete_codigo', ''),
-            'paquete_cantidad': data.get('paquete_cantidad', 1),
-            'codigo_barras': data.get('codigo_barras', ''),
-            'categoria_id': data.get('categoria_id', ''),
-            'subcategoria_id': data.get('subcategoria_id', ''),
-            'volumen_nombre': data.get('volumen_nombre', ''),
-            'volumen_cantidad': data.get('volumen_cantidad', ''),
-            'volumen_precio_oferta': data.get('volumen_precio', ''),
-            'volumen_nombre_2': data.get('volumen_nombre_2', ''),
-            'volumen_cantidad_2': data.get('volumen_cantidad_2', ''),
-            'volumen_precio_2': data.get('volumen_precio_2', ''),
-            'volumen_nombre_3': data.get('volumen_nombre_3', ''),
-            'volumen_cantidad_3': data.get('volumen_cantidad_3', ''),
-            'volumen_precio_3': data.get('volumen_precio_3', ''),
-           'venta_granel': data.get('venta_granel', False),
-            'imagen': data.get('tiene_imagen', False), 
-            'activo': data.get('activo', True), # 👈 Se mantiene para el POS
-            'visible_en_app': data.get('visible_en_app', True), # 🚀 NUEVO: Exclusivo para el interruptor
-            'orden': data.get('orden', 9999)
-        })
+    # --- RENDERIZADO INICIAL OPTIMIZADO ---
+    # Mismos datos y misma plantilla; la diferencia es que ya no golpeamos Firestore
+    # con una lectura completa en cada recarga del navegador.
+    lista_productos = obtener_productos_cache()
     productos_json = json.dumps(lista_productos)
-
-    compras_ref = db.collection('compras_inventario').order_by('fecha', direction=firestore.Query.DESCENDING).limit(15).stream()
-    historial = []
-    for doc in compras_ref:
-        data = doc.to_dict()
-        fecha_obj = data.get('fecha')
-        historial.append({
-            'compra_id': doc.id,
-            'producto_id': data.get('producto_id', ''),
-            'producto': data.get('producto_nombre', ''),
-            'cantidad': obtener_valor_flexible(data, ['cantidad_paquetes', 'cantidad_ingresada_paquetes', 'cantidad'], 0),
-            'factor': obtener_valor_flexible(data, ['factor', 'factor_unidades', 'peso'], 1),
-            'bonificacion': obtener_valor_flexible(data, ['bonificacion', 'bono'], 0),
-            'total_pagado': obtener_valor_flexible(data, ['costo_total'], 0),
-            'precio_mayor': obtener_valor_flexible(data, ['precio_mayor_registrado', 'precio_mayor'], 0),
-            'precio_menor': obtener_valor_flexible(data, ['precio_menor_registrado', 'precio_menor'], 0),
-            'is_menor': data.get('is_menor', True), 
-            'fecha': fecha_obj.strftime("%d/%m/%Y") if fecha_obj else "Sin fecha"
-        })
-
-    # ========================================================
-    # 📋 LECTURA DE PERSONAL PARA MOSTRAR EN LA WEB
-    # ========================================================
-    usuarios_ref = db.collection('usuarios').stream() # 👈 Se quitó el filtro ".where"
-    lista_cajeros = []
-    for doc in usuarios_ref:
-        data_user = doc.to_dict()
-        lista_cajeros.append({
-            'id': doc.id, 
-            'nombre': data_user.get('nombre', 'Sin nombre'), 
-            'email': data_user.get('email', data_user.get('correo', 'Sin correo')),
-            'rol': data_user.get('rol', 'CAJERO') # 👈 Leemos el rol
-        })
+    historial = obtener_historial_15_cache()
+    lista_cajeros = obtener_usuarios_cache()
 
     return render(request, 'compras.html', {
         'productos_json': productos_json, 
@@ -785,51 +887,61 @@ def gestionar_compras(request):
 # ==========================================================
 
 def api_historial_compras(request):
-    """ API 1: Envía el historial de compras a la App Flutter """
-    compras_ref = db.collection('compras_inventario').order_by('fecha', direction=firestore.Query.DESCENDING).limit(3000).stream()
-    lista = []
-    
-    for doc in compras_ref:
-        data = doc.to_dict()
-        fecha_obj = data.get('fecha')
-        fecha_str = fecha_obj.strftime("%d/%m/%Y") if fecha_obj else "Sin fecha"
-        
-        lista.append({
-            'id': doc.id,
-            'producto_nombre': data.get('producto_nombre', 'Desconocido'),
-            'fecha': fecha_str,
-            # APLICANDO EL TRADUCTOR A LA API DE FLUTTER
-            'costo_total': obtener_valor_flexible(data, ['costo_total'], 0.0),
-            'cantidad': obtener_valor_flexible(data, ['cantidad_paquetes', 'cantidad_ingresada_paquetes', 'cantidad'], 0.0),
-            'factor': obtener_valor_flexible(data, ['factor', 'factor_unidades', 'peso'], 1.0),
-            'bono': obtener_valor_flexible(data, ['bonificacion', 'bono'], 0.0),
-            'precio_menor': obtener_valor_flexible(data, ['precio_menor_registrado', 'precio_menor'], 0.0),
-            'precio_mayor': obtener_valor_flexible(data, ['precio_mayor_registrado', 'precio_mayor'], 0.0),
-            'activo': data.get('activo', True) # <--- AÑADIR ESTA LÍNEA
-        })
+    """API 1: misma respuesta para Flutter, pero con caché para no releer hasta 3000 docs en cada llamada."""
+    lista = cache.get(CACHE_HISTORIAL_APP)
+    if lista is None:
+        try:
+            lista = []
+            compras_ref = (db.collection('compras_inventario')
+                           .order_by('fecha', direction=firestore.Query.DESCENDING)
+                           .limit(3000).stream())
+            for doc in compras_ref:
+                data = doc.to_dict()
+                fecha_obj = data.get('fecha')
+                fecha_str = fecha_obj.strftime("%d/%m/%Y") if fecha_obj else "Sin fecha"
+                lista.append({
+                    'id': doc.id,
+                    'producto_nombre': data.get('producto_nombre', 'Desconocido'),
+                    'fecha': fecha_str,
+                    'costo_total': obtener_valor_flexible(data, ['costo_total'], 0.0),
+                    'cantidad': obtener_valor_flexible(data, ['cantidad_paquetes', 'cantidad_ingresada_paquetes', 'cantidad'], 0.0),
+                    'factor': obtener_valor_flexible(data, ['factor', 'factor_unidades', 'peso'], 1.0),
+                    'bono': obtener_valor_flexible(data, ['bonificacion', 'bono'], 0.0),
+                    'precio_menor': obtener_valor_flexible(data, ['precio_menor_registrado', 'precio_menor'], 0.0),
+                    'precio_mayor': obtener_valor_flexible(data, ['precio_mayor_registrado', 'precio_mayor'], 0.0),
+                    'activo': data.get('activo', True),
+                })
+            # Respetamos el comportamiento existente, pero como máximo consultamos una vez por minuto.
+            cache.set(CACHE_HISTORIAL_APP, lista, 60)
+            cache.set(CACHE_HISTORIAL_APP_STALE, lista, 86400)
+        except ResourceExhausted:
+            print('⚠️ Firebase agotó cuota en api_historial_compras. Usando copia de emergencia.')
+            lista = cache.get(CACHE_HISTORIAL_APP_STALE, [])
+        except Exception as e:
+            print(f'⚠️ Error en api_historial_compras: {e}')
+            lista = cache.get(CACHE_HISTORIAL_APP_STALE, [])
+
     return JsonResponse({'compras': lista})
 
 def api_buscar_productos(request):
-    """ API 2: Permite a la App Flutter buscar productos y recuperar sus precios base """
-    search_query = request.GET.get('search', '').lower()
-    productos_ref = db.collection('productos').stream()
+    """API 2: busca sobre la caché del catálogo y evita descargar todos los productos por cada búsqueda."""
+    search_query = request.GET.get('search', '').lower().strip()
+    productos = obtener_productos_cache()
     lista = []
-    
-    for doc in productos_ref:
-        data = doc.to_dict()
+
+    for data in productos:
         nombre = data.get('nombre', '')
-        
         if search_query in nombre.lower():
             lista.append({
-                'id': doc.id,
+                'id': data.get('id'),
                 'nombre': nombre,
                 'venta_granel': data.get('venta_granel', False),
                 'ultimo_costo': data.get('ultimo_costo', 0.0),
-                'precio_menor': data.get('precio', 0.0),
-                'precio_mayor': data.get('volumen_precio', 0.0),
-                'cantidad_mayor': data.get('volumen_cantidad', 3)
+                'precio_menor': data.get('precio_actual', 0.0),
+                'precio_mayor': data.get('precio_mayor', 0.0),
+                'cantidad_mayor': data.get('cantidad_mayor', 3),
             })
-            
+
     return JsonResponse({'productos': lista})
 
 @csrf_exempt
@@ -904,6 +1016,9 @@ def gestionar_usuarios(request):
         action = request.POST.get('action')
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.POST.get('ajax') == 'true'
 
+        if action in {'crear_usuario', 'eliminar_usuario'}:
+            invalidar_cache_usuarios()
+
         if action == 'crear_usuario':
             try:
                 nombre = request.POST.get('nombre', '').strip()
@@ -941,19 +1056,8 @@ def gestionar_usuarios(request):
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': f'❌ Error al eliminar: {str(e)}'})
 
-    # Si es GET, enviamos la lista de usuarios a la pantalla
-    usuarios_ref = db.collection('usuarios').stream()
-    lista_usuarios = []
-    for doc in usuarios_ref:
-        data = doc.to_dict()
-        lista_usuarios.append({
-            'uid': doc.id,
-            'nombre': data.get('nombre', 'Sin nombre'),
-            'email': data.get('email', 'Sin correo'),
-            'rol': data.get('rol', 'CAJERO'),
-            'activo': data.get('activo', True)
-        })
-
+    # Si es GET, usamos la misma lista de usuarios pero desde caché temporal.
+    lista_usuarios = obtener_usuarios_cache()
     return render(request, 'usuarios.html', {'usuarios': lista_usuarios})
 
 
