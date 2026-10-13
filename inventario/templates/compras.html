@@ -1189,14 +1189,32 @@
         }
     }
 
-    function renderizarCatalogo(lista) {
+    // =========================================================
+    // CATÁLOGO: CARGA PROGRESIVA DE PRODUCTOS
+    // =========================================================
+    let catalogoLimiteVisible = 25;
+    let catalogoListaActual = [];
+
+    function verMasProductosCatalogo() {
+        // Muestra 25 productos adicionales sin obligar a usar el buscador.
+        catalogoLimiteVisible += 25;
+        renderizarCatalogo(catalogoListaActual, true);
+    }
+
+    function renderizarCatalogo(lista, conservarLimite = false) {
         const tbody = document.getElementById('tablaCatalogoBody');
         tbody.innerHTML = '';
-        
-        // 🚀 CORTAMOS LA LISTA A UN MÁXIMO DE 25 PRODUCTOS VISUALES
-        const maxResultados = 25;
+
+        catalogoListaActual = lista;
+
+        // Cuando cambian búsqueda o filtros, vuelve a empezar en 25.
+        if (!conservarLimite) {
+            catalogoLimiteVisible = 25;
+        }
+
+        const maxResultados = Math.min(catalogoLimiteVisible, lista.length);
         const listaLimitada = lista.slice(0, maxResultados);
-        
+
         listaLimitada.forEach(p => {
             const pMenor = parseSeguro(p.precio_actual).toFixed(2);
             const pMayor = parseSeguro(p.precio_mayor).toFixed(2);
@@ -1245,17 +1263,41 @@
             tbody.appendChild(tr);
         });
 
-        // 🚀 AÑADIMOS UN AVISO SI HAY MÁS PRODUCTOS OCULTOS
+        // BOTÓN "VER MÁS": muestra 25 productos adicionales en cada clic.
         if (lista.length > maxResultados) {
+            const restantes = lista.length - maxResultados;
+            const proximoBloque = Math.min(25, restantes);
+
             const trAviso = document.createElement('tr');
             trAviso.innerHTML = `
-                <td colspan="7" class="text-center py-4" style="background-color: transparent; border-bottom: none;">
-                    <span class="badge" style="background-color: rgba(0, 213, 255, 0.1); color: var(--accent-blue); font-size: 0.85rem; padding: 10px 15px; border: 1px dashed var(--accent-blue);">
-                        <i class="bi bi-info-circle me-1"></i> Mostrando ${maxResultados} de ${lista.length} productos. Usa el buscador de arriba para encontrar el resto.
-                    </span>
+                <td colspan="9" class="text-center py-4" style="background-color: transparent; border-bottom: none;">
+                    <button
+                        type="button"
+                        class="btn btn-brand-blue px-4 py-2 fw-bold"
+                        onclick="verMasProductosCatalogo()"
+                        style="min-width: 320px;"
+                    >
+                        <i class="bi bi-chevron-down-circle me-2"></i>
+                        PRESIONE PARA VER MÁS PRODUCTOS
+                    </button>
+                    <div class="text-muted mt-2" style="font-size: 0.75rem;">
+                        Mostrando ${maxResultados} de ${lista.length} productos ·
+                        se mostrarán ${proximoBloque} más
+                    </div>
                 </td>
             `;
             tbody.appendChild(trAviso);
+        } else if (lista.length > 25) {
+            const trFin = document.createElement('tr');
+            trFin.innerHTML = `
+                <td colspan="9" class="text-center py-3" style="background-color: transparent; border-bottom: none;">
+                    <span class="text-brand-green fw-bold" style="font-size: 0.8rem;">
+                        <i class="bi bi-check-circle-fill me-1"></i>
+                        Mostrando los ${lista.length} productos
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(trFin);
         }
     
         initSortable(); // 👈 NUEVO: Activa el arrastre cada vez que dibujas la tabla
