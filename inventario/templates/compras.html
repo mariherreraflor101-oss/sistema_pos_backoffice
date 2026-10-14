@@ -1385,8 +1385,11 @@
     }
 
     function abrirEdicionCatalogo(id) {
-        const p = productosBase.find(x => x.id === id);
-        if(!p) return;
+        const p = productosBase.find(x => String(x.id) === String(id));
+        if (!p || !p.nombre || p.nombre === 'undefined') {
+            mostrarToast('No se pudo identificar el producto. Recarga el catálogo antes de editar.', 'danger');
+            return;
+        }
         
         document.getElementById('editCatId').value = p.id;
         document.getElementById('editCatNombre').value = p.nombre;
@@ -1518,47 +1521,75 @@
         event.preventDefault();
         const btn = form.querySelector('button[type="submit"]');
         const originalText = btn.innerHTML;
-        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
-        
+        const productoId = document.getElementById('editCatId').value;
+        const pLocal = productosBase.find(x => String(x.id) === String(productoId));
+        const nombreFormulario = document.getElementById('editCatNombre').value.trim();
+
+        // Nunca sobrescribir un producto si el editor no recuperó sus datos.
+        if (!pLocal || !pLocal.nombre || !nombreFormulario ||
+            nombreFormulario.toLowerCase() === 'undefined') {
+            mostrarToast('Producto sin datos válidos. Recarga la página antes de editar.', 'danger');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
         const formData = new FormData(form);
         formData.append('ajax', 'true');
-        
-        // 🚀 2. INYECTAR EL ID DE LA EMPRESA AL GUARDAR EDICIÓN
-        formData.append('empresa_id', localStorage.getItem('pos_empresa_id'));
-        
+        // El backend debe obtener la empresa de la sesión Django, no de esta entrada.
         try {
-            const res = await fetch(form.getAttribute('action'), { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} });
+            const res = await fetch(form.getAttribute('action'), {
+                method: 'POST', body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
             const data = await res.json();
-            
-            if(data.status === 'success') {
-                mostrarToast(data.message, 'success');
-                // Actualizar nuestro Array local para no tener que recargar la página
-                const pLocal = productosBase.find(x => x.id === form.producto_id.value);
-                if(pLocal) {
-                    pLocal.nombre = data.datos.nombre;
-                    pLocal.codigo_barras = data.datos.codigo_barras;
-                    pLocal.precio_actual = data.datos.precio;
-                    pLocal.precio_mayor = data.datos.volumen_precio;
-                    
-                    // 🚀 NUEVO: Guardar en memoria
-                    pLocal.precio_antiguo = data.datos.precio_antiguo;
-                    pLocal.venta_granel = data.datos.venta_granel;
-                    if(data.datos.categoria_id) pLocal.categoria_id = data.datos.categoria_id;
-                    
-                    // 🚀 AQUÍ ESTÁ LA LÍNEA QUE FALTABA
-                    if(data.datos.subcategoria_id) pLocal.subcategoria_id = data.datos.subcategoria_id; 
-                    
-                    // 🚀 ENCIENDE EL ICONO Y EL INTERRUPTOR AZUL AL GUARDAR
-                    if(data.datos.tiene_imagen) {
-                        pLocal.imagen = true;
-                        pLocal.activo = true; // 👈 Esto hace que el botón se vuelva azul al instante
-                    }
-                }
-                filtrarCatalogo(); // Redibujar la tabla
-                bootstrap.Modal.getInstance(document.getElementById('modalEditarCatalogo')).hide();
-            } else { mostrarToast(data.message, 'danger'); }
-        } catch(e) { mostrarToast('Error de conexión', 'danger'); } 
-        finally { btn.disabled = false; btn.innerHTML = originalText; }
+            if (!res.ok || data.status !== 'success') {
+                mostrarToast(data.message || `No se pudo guardar (HTTP ${res.status}).`, 'danger');
+                return;
+            }
+
+            // El servidor devuelve un objeto PARCIAL cuando se edita solo el código.
+            // Cambiar únicamente las propiedades presentes: nunca asignar undefined.
+            const cambios = data.datos || {};
+            if (Object.prototype.hasOwnProperty.call(cambios, 'nombre') && cambios.nombre) {
+                pLocal.nombre = cambios.nombre;
+            }
+            if (Object.prototype.hasOwnProperty.call(cambios, 'codigo_barras')) {
+                pLocal.codigo_barras = cambios.codigo_barras ?? '';
+            }
+            if (Object.prototype.hasOwnProperty.call(cambios, 'precio')) {
+                pLocal.precio_actual = cambios.precio;
+            }
+            if (Object.prototype.hasOwnProperty.call(cambios, 'precio_mayor')) {
+                pLocal.precio_mayor = cambios.precio_mayor;
+            } else if (Object.prototype.hasOwnProperty.call(cambios, 'volumen_precio')) {
+                pLocal.precio_mayor = cambios.volumen_precio;
+            }
+            if (Object.prototype.hasOwnProperty.call(cambios, 'precio_antiguo')) {
+                pLocal.precio_antiguo = cambios.precio_antiguo;
+            }
+            if (Object.prototype.hasOwnProperty.call(cambios, 'venta_granel')) {
+                pLocal.venta_granel = cambios.venta_granel;
+            }
+            if (Object.prototype.hasOwnProperty.call(cambios, 'categoria_id')) {
+                pLocal.categoria_id = cambios.categoria_id;
+            }
+            if (Object.prototype.hasOwnProperty.call(cambios, 'subcategoria_id')) {
+                pLocal.subcategoria_id = cambios.subcategoria_id;
+            }
+            if (cambios.tiene_imagen === true) pLocal.imagen = true;
+            // No modificar activo ni visible_en_app al editar datos del catálogo.
+
+            mostrarToast(data.message || 'Cambios guardados.', 'success');
+            filtrarCatalogo();
+            bootstrap.Modal.getInstance(document.getElementById('modalEditarCatalogo'))?.hide();
+        } catch (e) {
+            console.error('Error guardando catálogo:', e);
+            mostrarToast('No se pudo completar la solicitud: ' + e.message, 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     }
 
     function eliminarDesdeCatalogo(id, nombre) {
