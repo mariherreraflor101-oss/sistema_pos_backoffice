@@ -737,62 +737,85 @@ def gestionar_compras(request):
                 producto_id = request.POST.get('producto_id')
                 producto = _producto_local_por_id(producto_id) if producto_id else None
                 if not producto:
-                    return JsonResponse({'status':'error','message':'Producto local no encontrado.'}, status=404)
+                    return JsonResponse({'status': 'error', 'message': 'Producto local no encontrado.'}, status=404)
+
                 nombre = request.POST.get('editar_nombre', '').strip().upper()
                 antiguo = (producto.get('nombre') or '').strip()
+                if not nombre or not antiguo:
+                    return JsonResponse({'status': 'error', 'message': 'Nombre de producto inválido.'}, status=400)
+
                 precio_menor = to_float(request.POST.get('editar_precio_menor'))
                 precio_mayor = to_float(request.POST.get('editar_precio_mayor'))
-                if not nombre:
-                    return JsonResponse({'status':'error','message':'El nombre es obligatorio.'}, status=400)
-                # El código de barras es local: una edición SOLO de código no requiere
-                # que el producto exista en la API central ni altera su visibilidad.
-                codigo_ingresado = (request.POST.get('editar_codigo_barras') or '').strip()
-                codigo_existente = (producto.get('codigo_barras') or '').strip()
-                codigo_a_guardar = codigo_ingresado or codigo_existente
                 precio_antiguo = to_float(request.POST.get('editar_precio_antiguo'))
-                solo_codigo = (
-                    codigo_a_guardar != codigo_existente
-                    and nombre == antiguo.upper()
-                    and abs(precio_menor - to_float(producto.get('precio_actual'))) < 0.001
-                    and abs(precio_mayor - to_float(producto.get('precio_mayor'))) < 0.001
-                    and abs(precio_antiguo - to_float(producto.get('precio_antiguo'))) < 0.001
-                    and (request.POST.get('editar_es_granel') == 'on') == bool(producto.get('venta_granel', False))
+                codigo_ingresado = (request.POST.get('editar_codigo_barras') or '').strip()
+                codigo_existente = str(producto.get('codigo_barras') or '').strip()
+                codigo_a_guardar = codigo_ingresado or codigo_existente
+                es_granel = request.POST.get('editar_es_granel') == 'on'
+
+                # Solo sincronizar cuando realmente cambie nombre o precio.
+                cambia_maestro = (
+                    nombre != antiguo.upper()
+                    or abs(precio_menor - to_float(producto.get('precio_actual'))) >= 0.001
+                    or abs(precio_antiguo - to_float(producto.get('precio_antiguo'))) >= 0.001
+                    or abs(precio_mayor - to_float(producto.get('precio_mayor'))) >= 0.001
                 )
-                if solo_codigo:
+                datos_locales = {}
+                if codigo_a_guardar != codigo_existente:
+                    datos_locales['codigo_barras'] = codigo_a_guardar
+
+                # Las categorías solo pertenecen al producto local. Los selects
+                # deshabilitados no se envían: nunca borrar por omisión.
+                if 'editar_categoria_id' in request.POST:
+                    nueva_categoria = (request.POST.get('editar_categoria_id') or '').strip()
+                    categoria_actual = str(producto.get('categoria_id') or '').strip()
+                    if nueva_categoria and nueva_categoria != categoria_actual:
+                        datos_locales['categoria_id'] = nueva_categoria
+                if 'editar_subcategoria_id' in request.POST:
+                    nueva_subcategoria = (request.POST.get('editar_subcategoria_id') or '').strip()
+                    subcategoria_actual = str(producto.get('subcategoria_id') or '').strip()
+                    if nueva_subcategoria and nueva_subcategoria != subcategoria_actual:
+                        datos_locales['subcategoria_id'] = nueva_subcategoria
+
+                if es_granel != bool(producto.get('venta_granel', False)):
+                    datos_locales['venta_granel'] = es_granel
+
+                if cambia_maestro:
+                    # Validar primero el maestro, evitando cambios parciales de precio.
                     try:
-                        local_patch(f'/api/productos/{producto_id}', json_data={
-                            'codigo_barras': codigo_a_guardar
-                        })
+                        sincronizar_nombre_y_precio_central(
+                            str(empresa_sesion), antiguo, nombre, precio_menor,
+                            rol=request.session.get('pos_rol', ''),
+                            precio_antiguo=request.POST.get('editar_precio_antiguo', '0'))
                     except Exception as exc:
                         return JsonResponse({'status': 'error',
-                                             'message': 'No se pudo guardar código local: ' + str(exc)}, status=502)
+                                             'message': 'Cambios no aplicados: ' + str(exc)}, status=409)
+                    datos_locales.update({
+                        'nombre': nombre,
+                        'precio': precio_menor,
+                        'precio_mayor': precio_mayor,
+                        'volumen_precio': precio_mayor,
+                        'precio_antiguo': precio_antiguo,
+                    })
+
+                if not datos_locales:
                     return JsonResponse({'status': 'success',
-                                         'message': 'Código de barras actualizado solo en POS MySQL.',
-                                         'datos': {'codigo_barras': codigo_a_guardar}})
-                # Las ediciones de nombre/precio siguen validándose con el maestro.
-                # Nunca enviar un producto local inexistente a recibir_producto.
-                try:
-                    sincronizar_nombre_y_precio_central(str(empresa_sesion), antiguo, nombre, precio_menor,
-                        rol=request.session.get('pos_rol',''),
-                        precio_antiguo=request.POST.get('editar_precio_antiguo', '0'))
-                except Exception as exc:
-                    return JsonResponse({'status':'error','message':'Cambios no aplicados: '+str(exc)},status=409)
-                datos_locales = {
-                    'nombre':nombre, 'precio':precio_menor, 'precio_mayor':precio_mayor,
-                    'volumen_precio':precio_mayor,
-                    'precio_antiguo':to_float(request.POST.get('editar_precio_antiguo')),
-                    'venta_granel':request.POST.get('editar_es_granel') == 'on',
-                }
-                # El código de barras pertenece al POS local. No se envía al maestro aquí.
-                if codigo_a_guardar:
-                    datos_locales['codigo_barras'] = codigo_a_guardar
+                                         'message': 'No hay cambios para guardar.',
+                                         'datos': {}})
+
                 try:
                     local_patch(f'/api/productos/{producto_id}', json_data=datos_locales)
                 except Exception as exc:
-                    return JsonResponse({'status':'warning','message':'API actualizada pero falló POS local: '+str(exc)})
-                return JsonResponse({'status':'success','message':'Nombre y precio sincronizados.', 'datos':datos_locales})
+                    mensaje = ('La API central pudo actualizarse, pero MySQL local falló: '
+                               if cambia_maestro else 'No se pudo actualizar MySQL local: ')
+                    return JsonResponse({'status': 'error',
+                                         'message': mensaje + str(exc)}, status=502)
+
+                return JsonResponse({'status': 'success',
+                                     'message': ('Nombre/precios sincronizados y cambios locales guardados.'
+                                                 if cambia_maestro else 'Cambios guardados solo en MySQL local.'),
+                                     'datos': datos_locales})
             except Exception as exc:
-                return JsonResponse({'status':'error','message':str(exc)},status=500)
+                return JsonResponse({'status': 'error', 'message': str(exc)}, status=500)
 
         elif action == 'toggle_visibilidad_app':
             try:
