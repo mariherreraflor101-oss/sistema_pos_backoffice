@@ -382,11 +382,47 @@ def gestionar_compras(request):
             try:
                 producto_id = request.POST.get('producto_id')
                 nuevo_nombre = request.POST.get('nuevo_nombre', '').strip().upper()
-                if producto_id and nuevo_nombre:
-                    db.collection('productos').document(producto_id).update({'nombre': nuevo_nombre})
-                    if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Nombre actualizado a "{nuevo_nombre}"', 'nombre_actualizado': nuevo_nombre})
+                empresa_id = request.POST.get('empresa_id')
+                if not producto_id or not nuevo_nombre or not empresa_id or empresa_id == 'null':
+                    return JsonResponse({'status': 'error', 'message': 'Falta producto, nombre o empresa.'}, status=400)
+                doc_ref = db.collection('productos').document(producto_id)
+                doc = doc_ref.get()
+                if not doc.exists:
+                    return JsonResponse({'status': 'error', 'message': 'Producto no existe en POS.'}, status=404)
+                anterior = doc.to_dict() or {}
+                nombre_antiguo = anterior.get('nombre', '').strip()
+                if not nombre_antiguo:
+                    return JsonResponse({'status': 'error', 'message': 'Producto POS sin nombre original.'}, status=400)
+                if nuevo_nombre == nombre_antiguo:
+                    return JsonResponse({'status': 'success', 'message': 'El nombre no cambió.', 'nombre_actualizado': nuevo_nombre})
+
+                # Primero actualizar la API; no marcar éxito si la sincronización falla.
+                try:
+                    respuesta = requests.post(
+                        f"{URL_MAESTRO}/api/interno/control-superior/",
+                        data={'accion': 'sincronizar_nombre_producto',
+                              'nombre_antiguo': nombre_antiguo,
+                              'nuevo_nombre': nuevo_nombre,
+                              'codigo_barras': anterior.get('codigo_barras', ''),
+                              'empresa_id': empresa_id},
+                        timeout=10,
+                    )
+                    respuesta.raise_for_status()
+                    resultado = respuesta.json()
+                except (requests.RequestException, ValueError) as exc:
+                    return JsonResponse({'status': 'error', 'message': f'No se confirmó el cambio en la API: {exc}'}, status=502)
+                if resultado.get('status') != 'success':
+                    return JsonResponse({'status': 'error', 'message': resultado.get('message', 'La API rechazó el cambio.')}, status=409)
+
+                try:
+                    doc_ref.update({'nombre': nuevo_nombre})
+                except Exception as exc:
+                    # En caso de fallo local, avisar que la API ya se modificó.
+                    return JsonResponse({'status': 'warning', 'message': f'Nombre actualizado en la aplicación, pero falló Firebase: {exc}'})
+                if is_ajax:
+                    return JsonResponse({'status': 'success', 'message': '✅ Nombre actualizado en POS y aplicación.', 'nombre_actualizado': nuevo_nombre})
             except Exception as e:
-                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})
+                if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
         elif action == 'registrar_compra':
             try:
@@ -646,7 +682,42 @@ def gestionar_compras(request):
                         'venta_granel': es_granel, 'volumen_precio': p_mayor, 'precio': p_menor, 'ultimo_costo': costo_unitario
                     })
 
-                if is_ajax: return JsonResponse({'status': 'success', 'message': f'✅ Compra corregida.'})
+                # Sincronizar también con el catálogo Django consumido por clientes Flutter.
+                # Nota: Firestore ya fue actualizado; si falla la API, informamos la
+                # sincronización pendiente sin pedir que se repita la edición.
+                sincronizacion_error = None
+                empresa_id = request.POST.get('empresa_id')
+                producto_nombre = request.POST.get('producto_nombre', '').strip()
+                if not empresa_id or empresa_id == 'null' or not producto_nombre:
+                    sincronizacion_error = 'Falta empresa_id o producto_nombre para actualizar el catálogo de clientes.'
+                else:
+                    try:
+                        respuesta_maestro = requests.post(
+                            f"{URL_MAESTRO}/api/interno/control-superior/",
+                            data={
+                                'accion': 'sincronizar_precios_calculadora',
+                                'nombre': producto_nombre,
+                                'precio_final': p_menor,
+                                'empresa_id': empresa_id,
+                            },
+                            timeout=8,
+                        )
+                        respuesta_maestro.raise_for_status()
+                        resultado_maestro = respuesta_maestro.json()
+                        if resultado_maestro.get('status') != 'success':
+                            sincronizacion_error = resultado_maestro.get('message', 'Respuesta inesperada del servidor maestro.')
+                    except (requests.RequestException, ValueError) as exc:
+                        sincronizacion_error = str(exc)
+
+                if sincronizacion_error:
+                    print(f"⚠️ Compra guardada en Firebase pero NO sincronizada con API: {sincronizacion_error}")
+                    if is_ajax:
+                        return JsonResponse({
+                            'status': 'warning',
+                            'message': 'Compra corregida en POS, pero falta sincronizar el precio de la aplicación: ' + sincronizacion_error,
+                        })
+                elif is_ajax:
+                    return JsonResponse({'status': 'success', 'message': '✅ Compra corregida y precio sincronizado con la aplicación.'})
             except Exception as e:
                 if is_ajax: return JsonResponse({'status': 'error', 'message': str(e)})
 
